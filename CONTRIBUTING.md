@@ -10,7 +10,7 @@
 
 **Ninguém commita direto em `main` nem em `develop`.**
 
-Prefixos de branch (um por demanda): `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`, `hotfix/` (este sai da `main`).
+Prefixos de branch (um por demanda): `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`. **Toda branch nova nasce da `develop`, sem exceção** (inclusive correções urgentes).
 Exemplo: `feat/metas-com-prazo`.
 
 ## Passo a passo de uma demanda
@@ -54,7 +54,7 @@ chore: atualiza dependências
 |---|---|---|
 | `ci.yml` | PR para `develop` ou `main` | Testes do backend (com Postgres), typecheck + testes + build do frontend, build das imagens Docker, consistência de versão |
 | `ci.yml` → job `auto-aprovar` | PR para `develop` com tudo verde | Aprova e faz o merge automaticamente |
-| `ci.yml` → job `guarda-main` | PR para `main` | Exige que a origem seja `develop` ou `hotfix/*`; exige entrada no CHANGELOG |
+| `ci.yml` → job `guarda-main` | PR para `main` | Exige que a origem seja `develop`; exige entrada no CHANGELOG |
 | `release.yml` | Push na `main` | Cria a tag `vX.Y.Z-beta.N` e o GitHub Release a partir do `VERSION` e do CHANGELOG |
 | `guarda-commits.yml` | Push em `main`/`develop` | Avisa (falha o job) se o commit não veio de um PR |
 
