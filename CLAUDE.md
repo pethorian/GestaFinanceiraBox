@@ -2,6 +2,15 @@
 
 Gestão Financeira Box: projeção de 12 meses de renda e gastos. Visão geral e como subir: [README.md](README.md). Regras de negócio: [PLANO.md](PLANO.md) e [backend/README.md](backend/README.md).
 
+## Fluxo de trabalho (obrigatório; detalhes em [CONTRIBUTING.md](CONTRIBUTING.md))
+
+- **Nunca commite direto em `main` ou `develop`.** Toda demanda (feat/fix/refactor/test/docs/chore/ci) começa numa branch nova criada a partir de `develop`, com prefixo `tipo/assunto`.
+- **Um commit por feat/fix/refactor**, em Conventional Commits. Quando há teste associado, os testes também ganham commit (de preferência `test: ...` separado).
+- Ao terminar, **abra um PR para `develop`** (`gh pr create --base develop`). O CI roda e, se estiver tudo verde, o PR é aprovado e mergeado automaticamente. Não faça merge manual em `develop`.
+- `develop` → `main` é PR **aprovado manualmente pelo dono**. Nunca aprove nem mergeie PR para `main`.
+- Versão em beta (SemVer `-beta.N`), fonte única no arquivo `VERSION`; troque só com `scripts/bump-version.sh` e registre no `CHANGELOG.md`.
+- Rode os testes localmente antes de abrir o PR.
+
 ## Stack e comandos
 
 - Backend: Java 21, Spring Boot 3, JPA, Flyway, PostgreSQL (`backend/`)
@@ -28,7 +37,7 @@ Gestão Financeira Box: projeção de 12 meses de renda e gastos. Visão geral e
 
 ## Segurança e privacidade
 
-- Nunca commite nem imprima `.env`, `*.xlsx`, dumps (`backup*.sql`, `*.dump`) ou senhas. Só o `.env.example` vai para o git.
+- Nunca commite nem imprima `.env`, dumps (`backup*.sql`, `*.dump`) ou senhas. Só o `.env.example` vai para o git.
 - Nunca rode `docker compose down -v`, `docker volume rm` ou `docker system prune --volumes` sem pedido explícito do usuário (apaga o banco). Faça backup antes (ver `docs/persistencia-docker.md`).
 - O repositório é privado no GitHub (`pethorian/GestaFinanceiraBox`).
 
