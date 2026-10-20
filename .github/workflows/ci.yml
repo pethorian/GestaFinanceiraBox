@@ -77,6 +77,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Branch nasceu do lugar certo (develop; hotfix/* da main)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: bash scripts/check-branch-origin.sh "$BASE_REF" "$HEAD_REF" HEAD
       - name: PR para main só vem de develop ou hotfix
         if: github.base_ref == 'main'
         env:
