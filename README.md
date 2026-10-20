@@ -140,4 +140,10 @@ docker-compose.yml   db + backend + frontend
 
 ## Dados pessoais
 
-Planilhas de origem (`*.xlsx`), `.env` e dumps de banco (`backup*.sql`) estão no `.gitignore` e não devem ser commitados. Seus gastos reais ficam apenas no volume Docker do seu computador.
+O `.env` e os dumps de banco (`backup*.sql`) estão no `.gitignore` e não devem ser commitados. Seus gastos reais ficam apenas no volume Docker do seu computador.
+
+## Contribuindo e versões
+
+O fluxo de trabalho (branches, commits, PRs e CI) está em [CONTRIBUTING.md](CONTRIBUTING.md). Resumo: nada vai direto para `main` nem `develop`; todo trabalho nasce numa branch, passa pelo CI num PR para `develop`, e `develop` chega à `main` por PR aprovado manualmente.
+
+O projeto está em **beta** e segue [SemVer](https://semver.org/lang/pt-BR/) com sufixo `-beta.N` (ex.: `0.1.0-beta.1`). A versão atual está no arquivo [VERSION](VERSION) e o histórico em [CHANGELOG.md](CHANGELOG.md).
