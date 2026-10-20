@@ -77,14 +77,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: PR para main só vem de develop ou hotfix
+      - name: PR para main só vem de develop
         if: github.base_ref == 'main'
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           case "$HEAD_REF" in
-            develop|hotfix/*) ;;
-            *) echo "::error::PR para main deve sair de develop ou hotfix/* (origem: $HEAD_REF)"; exit 1 ;;
+            develop) ;;
+            *) echo "::error::PR para main deve sair de develop (origem: $HEAD_REF)"; exit 1 ;;
           esac
       - name: PR para main exige entrada no CHANGELOG
         if: github.base_ref == 'main'
