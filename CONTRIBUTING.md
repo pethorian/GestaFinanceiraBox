@@ -54,7 +54,7 @@ chore: atualiza dependências
 |---|---|---|
 | `ci.yml` | PR para `develop` ou `main` | Testes do backend (com Postgres), typecheck + testes + build do frontend, build das imagens Docker, consistência de versão |
 | `ci.yml` → job `auto-aprovar` | PR para `develop` com tudo verde | Aprova e faz o merge automaticamente |
-| `ci.yml` → job `fluxo` | PR para `develop`/`main` | Confere a origem da branch (`scripts/check-branch-origin.sh`): fora `hotfix/*`, a branch deve ter nascido da `develop`; `hotfix/*` deve ter nascido da `main`, em histórico linear (use rebase, não merge, para atualizar). Para `main`: | Exige que a origem seja `develop` ou `hotfix/*`; exige entrada no CHANGELOG |
+| `ci.yml` → job `fluxo` | PR para `develop`/`main` | Confere a origem da branch (`scripts/check-branch-origin.sh`): fora `hotfix/*`, a branch deve ter nascido da `develop`; `hotfix/*` deve ter nascido da `main`, em histórico linear (use rebase, não merge, para atualizar). Para `main`: origem só `develop` ou `hotfix/*` e exige entrada no CHANGELOG |
 | `release.yml` | Push na `main` | Cria a tag `vX.Y.Z-beta.N` e o GitHub Release a partir do `VERSION` e do CHANGELOG |
 | `guarda-commits.yml` | Push em `main`/`develop` | Avisa (falha o job) se o commit não veio de um PR |
 
