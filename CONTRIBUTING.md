@@ -10,7 +10,7 @@
 
 **Ninguém commita direto em `main` nem em `develop`.**
 
-Prefixos de branch (um por demanda): `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`. **Toda branch nova nasce da `develop`, sem exceção** (inclusive correções urgentes).
+Prefixos de branch (um por demanda): `feat/`, `fix/`, `refactor/`, `test/`, `docs/`, `chore/`, `ci/`. **Toda branch nova nasce da `develop`, com uma única exceção: `hotfix/` nasce da `main`** (veja "Correção urgente na main").
 Exemplo: `feat/metas-com-prazo`.
 
 ## Passo a passo de uma demanda
@@ -54,7 +54,7 @@ chore: atualiza dependências
 |---|---|---|
 | `ci.yml` | PR para `develop` ou `main` | Testes do backend (com Postgres), typecheck + testes + build do frontend, build das imagens Docker, consistência de versão |
 | `ci.yml` → job `auto-aprovar` | PR para `develop` com tudo verde | Aprova e faz o merge automaticamente |
-| `ci.yml` → job `guarda-main` | PR para `main` | Exige que a origem seja `develop`; exige entrada no CHANGELOG |
+| `ci.yml` → job `guarda-main` | PR para `main` | Exige que a origem seja `develop` ou `hotfix/*`; exige entrada no CHANGELOG |
 | `release.yml` | Push na `main` | Cria a tag `vX.Y.Z-beta.N` e o GitHub Release a partir do `VERSION` e do CHANGELOG |
 | `guarda-commits.yml` | Push em `main`/`develop` | Avisa (falha o job) se o commit não veio de um PR |
 
@@ -73,3 +73,18 @@ chore: atualiza dependências
 - Registre as mudanças em `CHANGELOG.md`, na seção `[Não lançado]`; ao lançar, renomeie para a versão e data.
 - Quando usar cada incremento: `beta.N` para qualquer entrega em beta; `0.MINOR` para funcionalidade nova relevante; `0.x.PATCH` para correção. Ao sair do beta, `1.0.0`.
 - O lançamento acontece quando o PR `develop` → `main` é aprovado: o `release.yml` cria a tag.
+
+## Correção urgente na `main` (hotfix)
+
+Se há um bug na `main` e a `develop` já tem coisas que ainda não podem ir para produção, **não** use a `develop` como base. Esta é a única exceção à regra "branch nasce da `develop`":
+
+1. Crie a branch da `main`:
+
+   ```bash
+   git checkout main && git pull
+   git checkout -b hotfix/nome-do-bug
+   ```
+
+2. Faça só a correção: um commit para o fix e outro para o teste. Suba a versão (`scripts/bump-version.sh`) e registre no `CHANGELOG.md`.
+3. Abra PR `hotfix/...` → `main`. O CI roda e **a aprovação é manual**.
+4. Depois de entrar na `main`, abra um segundo PR da **mesma branch** para a `develop` (`gh pr create --base develop`), para o bug não voltar no próximo release. Ele passa pelo CI e é mergeado automaticamente. Se a `develop` mudou na mesma área, resolva os conflitos na branch.

@@ -4,7 +4,7 @@ Gestão Financeira Box: projeção de 12 meses de renda e gastos. Visão geral e
 
 ## Fluxo de trabalho (obrigatório; detalhes em [CONTRIBUTING.md](CONTRIBUTING.md))
 
-- **Nunca commite direto em `main` ou `develop`.** Toda demanda (feat/fix/refactor/test/docs/chore/ci) começa numa branch nova **sempre criada a partir de `develop` atualizada** (`git checkout develop && git pull`), nunca da `main` nem de outra feature, com prefixo `tipo/assunto`.
+- **Nunca commite direto em `main` ou `develop`.** Toda demanda (feat/fix/refactor/test/docs/chore/ci) começa numa branch nova **sempre criada a partir de `develop` atualizada** (`git checkout develop && git pull`), nunca da `main` nem de outra feature, com prefixo `tipo/assunto`. **Única exceção: `hotfix/nome-do-bug` nasce da `main`** (bug em produção sem arrastar o que está só na `develop`): PR para `main` (aprovação manual do dono) e depois um segundo PR da mesma branch para `develop` (CONTRIBUTING.md, seção hotfix).
 - **Um commit por feat/fix/refactor**, em Conventional Commits. Quando há teste associado, os testes também ganham commit (de preferência `test: ...` separado).
 - Ao terminar, **abra um PR para `develop`** (`gh pr create --base develop`). O CI roda e, se estiver tudo verde, o PR é aprovado e mergeado automaticamente. Não faça merge manual em `develop`.
 - `develop` → `main` é PR **aprovado manualmente pelo dono**. Nunca aprove nem mergeie PR para `main`.
