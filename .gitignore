@@ -1,0 +1,33 @@
+# Segredos / ambiente
+.env
+.env.*
+!.env.example
+
+# Config local do Claude Code
+.claude/settings.local.json
+
+# Planilhas de origem (dado de terceiro / material do empregador)
+*.xlsx
+*.xls
+~$*
+
+# Build e dependencias
+backend/target/
+target/
+node_modules/
+dist/
+*.jar
+*.log
+
+# Dumps e backups de banco (podem conter despesas reais)
+backup*.sql
+*.dump
+*.sql.gz
+pgdata/
+
+# IDE / SO
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
