@@ -3,8 +3,11 @@
 .env.*
 !.env.example
 
-# Config local do Claude Code
-.claude/settings.local.json
+# Config local do Claude Code (pasta inteira, é preferência pessoal)
+.claude/
+
+# Protótipos HTML antigos (histórico, não fazem parte do app)
+prototipos/
 
 # Planilhas de origem (dado de terceiro / material do empregador)
 *.xlsx

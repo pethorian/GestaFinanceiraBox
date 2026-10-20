@@ -4,11 +4,11 @@ Java 21 + Spring Boot 3.3, JPA/Hibernate, Flyway, PostgreSQL.
 
 ## Rodar
 
-Com Docker (Postgres + backend):
+Com Docker, a partir da raiz do projeto (tutorial completo no [README.md](../README.md)):
 
 ```bash
-cp .env.example .env   # ajuste DB_PASSWORD
-docker compose up --build
+cp .env.example .env   # defina DB_PASSWORD
+docker compose up -d --build   # db + backend + frontend
 ```
 
 Sem Docker: tenha um Postgres com o banco `gestafinanceira` e rode
