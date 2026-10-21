@@ -18,6 +18,8 @@ export interface Perfil {
   valeTransporte: boolean
   sindicato: boolean
   saldoInicial: number
+  /** saldo atual acumulado na FUNCEF (opcional, ≥ 0); ponto de partida da previdência na projeção */
+  saldoFuncef: number
 }
 
 export interface Ferias {
@@ -148,6 +150,8 @@ export interface SaudeFinanceira {
   /** todas as categorias, na ordem de cadastro (média 0 se não há gasto) */
   categorias: CategoriaSaude[]
   diagnostico: string[]
+  /** composição de atual.poupanca: aportes em metas + contribuição FUNCEF */
+  poupancaDetalhe: { metas: number; funcef: number }
 }
 
 export interface DetalheIrpf {
@@ -201,6 +205,12 @@ export interface MesProjecao {
   guardado: number
   /** acumulado + guardado */
   patrimonio: number
+  /** parte da FUNCEF retida na última parcela do 13º (já dentro de descontoDecimo) */
+  funcefDecimo: number
+  /** saldo FUNCEF ao fim do mês: saldo informado + contribuições acumuladas, sem rendimento */
+  previdencia: number
+  /** patrimonio + previdencia */
+  patrimonioTotal: number
   metas: AporteMeta[]
   plr: number
   bonus: number
@@ -237,6 +247,10 @@ export interface ResumoProjecao {
   guardadoFinal: number
   /** saldoFinal + guardadoFinal */
   patrimonioFinal: number
+  previdenciaInicial: number
+  previdenciaFinal: number
+  /** patrimonioFinal + previdenciaFinal */
+  patrimonioTotalFinal: number
 }
 
 export interface Projecao {

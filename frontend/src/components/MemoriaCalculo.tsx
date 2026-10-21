@@ -60,7 +60,7 @@ export function MemoriaCalculo({ mes, onClose }: { mes: MesProjecao | null; onCl
 
           <div className="memo"><h4>Outros descontos</h4>
             <L a="Saúde Caixa" b={fmt(m.saude)} />
-            <L a="FUNCEF" b={fmt(m.funcef)} />
+            <L a="FUNCEF (guardada na previdência)" b={fmt(m.funcef)} />
             <L a="Vale-transporte" b={fmt(m.valeTransporte)} />
             <L a="Sindicato" b={fmt(m.sindicato)} />
             {m.descontoDecimo > 0 && <L a="INSS + IR do 13º" b={fmt(m.descontoDecimo)} />}
@@ -81,6 +81,14 @@ export function MemoriaCalculo({ mes, onClose }: { mes: MesProjecao | null; onCl
               ))}
               <L a="Guardado em metas" b={fmt(m.guardado)} />
               <L a={<b>Patrimônio (disponível + guardado)</b>} b={<b>{fmt(m.patrimonio)}</b>} />
+            </div>
+          )}
+
+          {m.previdencia > 0 && (
+            <div className="memo"><h4>Guardada (previdência), não é gasto</h4>
+              {m.funcef + m.funcefDecimo > 0 && <L a={m.funcefDecimo > 0 ? 'FUNCEF do mês (com 13º)' : 'FUNCEF do mês'} b={fmt(m.funcef + m.funcefDecimo)} />}
+              <L a="Saldo na FUNCEF ao fim do mês" b={fmt(m.previdencia)} />
+              <L a={<b>Patrimônio total (com previdência)</b>} b={<b>{fmt(m.patrimonioTotal)}</b>} />
             </div>
           )}
         </>

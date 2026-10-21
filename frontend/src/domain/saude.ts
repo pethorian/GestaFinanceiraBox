@@ -21,7 +21,7 @@ export interface InfoFaixa {
 export const FAIXAS: InfoFaixa[] = [
   { faixa: 'necessidades', nome: 'Necessidades', descricao: 'Gastos obrigatórios: moradia, contas, mercado, saúde, transporte.', meta: 50, rotuloMeta: 'até 50%', cor: 'var(--f-nec)' },
   { faixa: 'desejos', nome: 'Desejos', descricao: 'Lazer e escolhas pessoais: passeios, assinaturas, compras.', meta: 30, rotuloMeta: 'até 30%', cor: 'var(--f-des)' },
-  { faixa: 'poupanca', nome: 'Poupança', descricao: 'Aportes mensais em metas e na reserva de emergência.', meta: 20, rotuloMeta: 'pelo menos 20%', cor: 'var(--f-pou)' },
+  { faixa: 'poupanca', nome: 'Poupança', descricao: 'Aportes mensais em metas, na reserva de emergência e a contribuição FUNCEF.', meta: 20, rotuloMeta: 'pelo menos 20%', cor: 'var(--f-pou)' },
 ]
 
 /** Percentual da renda (já com 1 casa, vindo do back end); sem renda, "—". */

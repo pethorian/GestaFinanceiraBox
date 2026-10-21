@@ -103,6 +103,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
             <div><span>Sobra</span><span className={`num ${cls(h.sobra)}`}>{fmt(h.sobra)}</span></div>
             <div><span>Saldo disponível</span><span className="num">{fmt(h.acumulado)}</span></div>
             {h.guardado > 0 && <div><span>Guardado em metas</span><span className="num">{fmt(h.guardado)}</span></div>}
+            {h.previdencia > 0 && <div><span>Previdência FUNCEF</span><span className="num">{fmt(h.previdencia)}</span></div>}
           </>
         )}
       </div>

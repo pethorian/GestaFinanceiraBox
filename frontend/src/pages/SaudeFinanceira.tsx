@@ -120,6 +120,13 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
                 ? <>Use a aba <b>Metas e reserva</b> para guardar <b className="num">{fmt(saude.aporteSugerido)}</b> por mês e chegar aos 20%.</>
                 : <>Você já guarda pelo menos 20% da renda. Ajuste quando quiser em <b>Metas e reserva</b>.</>}
             </p>
+            {saude.poupancaDetalhe.funcef > 0 && (
+              <p className="sf-split">
+                <span>Metas <b className="num">{fmt(saude.poupancaDetalhe.metas)}</b></span>
+                <span>+ FUNCEF <b className="num">{fmt(saude.poupancaDetalhe.funcef)}</b></span>
+                <span>= <b className="num">{fmt(saude.atual.poupanca)}</b>/mês</span>
+              </p>
+            )}
             <a className="btn pri sm" href="#/metas">Criar ou ajustar reserva<Icon name="arrow" size={14} /></a>
           </Card>
         </div>

@@ -17,6 +17,9 @@ const mesBase = {
   inss: 500,
   irpf: { deducaoLegal: 0, deducaoMinima: 0, deducao: 0, baseCalculo: 0, aliquota: 0, bruto: 0, reducao: 0, imposto: 0 },
   funcef: 0,
+  funcefDecimo: 0,
+  previdencia: 0,
+  patrimonioTotal: 1500,
   saude: 0,
   valeTransporte: 0,
   sindicato: 0,
@@ -77,5 +80,20 @@ describe('MemoriaCalculo: aportes em metas', () => {
     const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
     expect(html).not.toContain('Aportes em metas')
     expect(html).not.toContain('Guardado em metas')
+  })
+})
+
+describe('MemoriaCalculo: FUNCEF guardada', () => {
+  it('mostra a previdência como guardada, não como gasto', () => {
+    const html = renderToStaticMarkup(
+      <MemoriaCalculo mes={{ ...mesBase, funcef: 300, previdencia: 10300, patrimonioTotal: 11800 }} onClose={() => {}} />,
+    )
+    expect(html).toContain('Guardada (previdência), não é gasto')
+    expect(html).toContain('Saldo na FUNCEF ao fim do mês')
+  })
+
+  it('sem previdência não mostra o bloco', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
+    expect(html).not.toContain('Guardada (previdência)')
   })
 })
