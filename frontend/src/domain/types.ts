@@ -4,6 +4,8 @@ export type Saude = 'NAO' | 'SOZINHO' | 'DEP'
 export type TipoLancamento = 'RECORRENTE' | 'PONTUAL' | 'PARCELADO'
 
 export interface Perfil {
+  /** como o usuário quer ser chamado (opcional, até 60 caracteres); null = sem nome */
+  nome: string | null
   cargoId: number
   delta: number
   diasSobreaviso: number

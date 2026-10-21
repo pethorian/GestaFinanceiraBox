@@ -35,7 +35,14 @@ public final class Dtos {
             @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal funcefPct,
             boolean valeTransporte,
             boolean sindicato,
-            @NotNull BigDecimal saldoInicial) {
+            @NotNull BigDecimal saldoInicial,
+            @Size(max = 60) String nome) {
+        /** Aparado antes da validação de tamanho; nulo (campo ausente) fica nulo e o serviço mantém o atual. */
+        public PerfilDto {
+            if (nome != null) {
+                nome = nome.strip();
+            }
+        }
     }
 
     public record FeriasDto(boolean ativo, @Min(1) @Max(12) int mes, boolean abono) {

@@ -41,7 +41,7 @@ public class PerfilService {
     public PerfilDto buscar() {
         Perfil p = entidade();
         return new PerfilDto(p.cargoId, p.delta, p.diasSobreaviso, p.filhos, p.homeOffice, p.vrVa, p.saude,
-                p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial);
+                p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial, p.nome);
     }
 
     public PerfilDto atualizar(PerfilDto d) {
@@ -74,6 +74,10 @@ public class PerfilService {
         p.valeTransporte = d.valeTransporte();
         p.sindicato = d.sindicato();
         p.saldoInicial = d.saldoInicial();
+        // nome ausente (null) mantém o atual; vazio/branco limpa para null
+        if (d.nome() != null) {
+            p.nome = d.nome().isBlank() ? null : d.nome();
+        }
         p.atualizadoEm = LocalDateTime.now();
         perfis.save(p);
         return buscar();
@@ -125,7 +129,7 @@ public class PerfilService {
         return buscarBonus();
     }
 
-    /** Perfil padrão (equivale a dadosIniciais() do frontend), usado em "restaurar padrão". */
+    /** Perfil padrão (equivale a dadosIniciais() do frontend), usado em "restaurar padrão". Mantém o nome do usuário. */
     public void restaurarPadrao() {
         Perfil p = perfis.findById(ID).orElseGet(Perfil::new);
         Cargo cargo = cargos.findAllByOrderByOrdemAscIdAsc().stream().findFirst()

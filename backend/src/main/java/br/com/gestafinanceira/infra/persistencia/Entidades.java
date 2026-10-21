@@ -133,6 +133,7 @@ public final class Entidades {
         @Column(name = "bonus_mes") public short bonusMes = 12;
         @Column(name = "bonus_salarios") public BigDecimal bonusSalarios = BigDecimal.ZERO;
         @Column(name = "plr_ativo") public boolean plrAtivo;
+        public String nome;
         @Column(name = "atualizado_em") public LocalDateTime atualizadoEm = LocalDateTime.now();
     }
 

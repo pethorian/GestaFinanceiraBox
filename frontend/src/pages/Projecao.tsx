@@ -3,7 +3,7 @@ import { FluxoChart, Spark } from '../components/charts'
 import { Icon, type IconName } from '../components/Icon'
 import { MemoriaCalculo } from '../components/MemoriaCalculo'
 import { Card, Page, cls } from '../components/ui'
-import { fmt, rotuloCompetencia } from '../domain/format'
+import { fmt, rotuloCompetencia, tituloProjecao } from '../domain/format'
 import { useApp } from '../store/AppContext'
 
 function Kpi({ icon, cor, titulo, valor, classe = '' }: { icon: IconName; cor: string; titulo: string; valor: string; classe?: string }) {
@@ -35,7 +35,7 @@ export function Projecao() {
   )
 
   return (
-    <Page fit title="Projeção dos próximos 12 meses" subtitle={`${cargo?.nome ?? ''} · ${ms[0].rotulo} a ${ultimo.rotulo}`} aside={aviso || undefined}>
+    <Page fit title={tituloProjecao(dados.perfil.nome)}subtitle={`${cargo?.nome ?? ''} · ${ms[0].rotulo} a ${ultimo.rotulo}`} aside={aviso || undefined}>
       <div className="proj-top">
         <Card className="hero">
           <div>

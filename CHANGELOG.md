@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Não lançado]
 
 ### Adicionado
+- Nome do usuário no perfil (opcional, até 60 caracteres); a tela de Projeção passa a saudar pelo nome.
 - PLR opcional na projeção: o usuário escolhe se conta com ele; padrão de 2 parcelas (setembro 50% e março 50%), com mês e valor ajustáveis.
 - IR sobre o PLR em tributação exclusiva (tabela própria com vigência): setembro isento e março com os descontos.
 - Aviso para não contar com o dinheiro do PLR ao ativá-lo e no detalhe do mês da projeção.
