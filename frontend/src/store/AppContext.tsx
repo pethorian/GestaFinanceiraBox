@@ -213,7 +213,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         mudar((d) => ({
           ...d,
           metas: d.metas.map((m) => (m.id === id
-            ? { ...m, falta: salva.falta, percentual: salva.percentual, mesesParaAtingir: salva.mesesParaAtingir, previsao: salva.previsao }
+            ? {
+              ...m, falta: salva.falta, percentual: salva.percentual, mesesParaAtingir: salva.mesesParaAtingir,
+              previsao: salva.previsao, guardadoFimProjecao: salva.guardadoFimProjecao, fimProjecao: salva.fimProjecao,
+            }
             : m)),
         }))
       })

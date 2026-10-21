@@ -43,8 +43,8 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 | Bônus Caixa | `GET/PUT /api/bonus` (`{ativo, mes 1..12, salarios}`; só cargos de 8h, `salarios` ≤ máximo vigente) |
 | Gastos | `GET/POST /api/lancamentos`, `POST /api/lancamentos/novo` (linha padrão), `GET /api/lancamentos/resumo` (média por categoria), `GET/PUT/DELETE /api/lancamentos/{id}` (o DELETE é lógico: soft delete, ver abaixo) |
 | Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` (`Reserva` não é categoria de gasto: a reserva fica em Metas; criar categoria ou gasto com esse nome retorna `422`) |
-| Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}` |
-| Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM` |
+| Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}`. Entrada: `{nome, valorAlvo, valorAtual, aporteMensal, banco}`; `banco` é texto livre opcional (até 80 caracteres depois de aparado; vazio/branco ou ausente grava `null`; excedeu → 400). Saída acrescenta `falta`, `percentual`, `mesesParaAtingir`, `previsao`, `guardadoFimProjecao` e `fimProjecao` (ver "Metas e aportes") |
+| Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM`. Cada mês traz `aportes`, `sobra` (já sem os aportes), `acumulado` (disponível em conta), `guardado`, `patrimonio` e `metas` (`[{id, nome, aporte, guardado}]`); o `resumo` traz `aportes`, `guardadoInicial`, `guardadoFinal` e `patrimonioFinal` |
 | Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com 13º ativo, PLR inativo (parcelas set/mar 50%) e bônus inativo; mantém o `nome` do perfil; não toca nos parâmetros) |
 | Vigentes | `GET /api/parametros/vigentes?data=` (cargos, deltas, INSS, IRPF e benefícios vigentes) |
 | Cargos | `GET /api/parametros/cargos?data=`, `POST`, `GET/PUT/DELETE /api/parametros/cargos/{id}` |
@@ -55,6 +55,16 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 
 Tabelas com vigência: o `PUT` grava uma vigência inteira (identificada por `vigenciaInicio`) e o fim das
 vigências é recalculado. Para cada mês da projeção vale a vigência mais recente iniciada até o dia 1º do mês.
+
+## Metas e aportes
+
+Regra única em `domain/calculo/metas/CalculadoraAportes` (usada pela projeção e pela previsão da aba Metas):
+
+- **Aporte do mês.** Com alvo (`valor_alvo > 0`): aporta `aporte_mensal` enquanto o guardado não atinge o alvo; no mês em que atinge, aporta **só o que falta**; depois, zero. Se `valor_atual ≥ valor_alvo`, nunca aporta. **Sem alvo (`valor_alvo = 0`): aporta todo mês** (reserva contínua), sem previsão de conclusão. `aporte_mensal = 0`: nunca aporta.
+- **Linha do tempo.** `valor_atual` é o saldo guardado no início do 1º mês da projeção, e o 1º mês já tem aporte. O guardado de cada meta evolui mês a mês (`guardado = guardado anterior + aporte`), em `BigDecimal` HALF_UP com 2 casas.
+- **Na projeção** (`ProjetorMensal`): `aportes` = soma dos aportes do mês (saída da conta); `sobra = líquido − gastos − aportes`; `acumulado` = saldo inicial + sobras, ou seja, o **dinheiro disponível em conta**; `guardado` = soma dos saldos das metas ao fim do mês; `patrimonio = acumulado + guardado` (o aporte sai da conta, mas continua sendo da pessoa). Meses no vermelho, melhor/pior mês e médias usam a `sobra` já sem os aportes. O mês comum (`/mes-comum`) aplica o aporte do 1º mês a partir dos valores atuais.
+- **Previsão** (aba Metas, a contar do mês atual): `mesesParaAtingir` = número de aportes que faltam, `ceil(falta ÷ aporte mensal)`, contando o mês atual (0 = já atingida; `null` sem alvo ou sem aporte); `previsao` = mês do último aporte = mês atual + n − 1 (o mês atual quando já atingida), que é o mesmo mês em que a projeção iniciada hoje atinge o alvo. Ex.: alvo 10.000, atual 1.000, aporte 1.500 em out/26 → 6 aportes, previsão mar/27; com aporte 2.000 → 5 aportes (o último de 1.000), previsão fev/27. `guardadoFimProjecao` é o saldo previsto da meta em `fimProjecao` (12º mês).
+- **Banco** (`meta.banco`, migração `V9`): onde o dinheiro está guardado, texto livre informativo; não entra no cálculo.
 
 ## Gastos: exclusão lógica e expiração
 

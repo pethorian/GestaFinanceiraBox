@@ -77,14 +77,21 @@ export interface MetaEntrada {
   valorAlvo: number
   valorAtual: number
   aporteMensal: number
+  /** onde o dinheiro está guardado (texto livre; o servidor apara e grava vazio como null) */
+  banco: string | null
 }
 
 export interface Meta extends MetaEntrada {
   id: number
   falta: number
   percentual: number
+  /** aportes que faltam, contando o mês atual (0 = atingida; null = sem alvo ou sem aporte) */
   mesesParaAtingir: number | null
+  /** mês do último aporte (o mesmo em que a projeção atinge o alvo) */
   previsao: string | null
+  /** saldo previsto da meta em fimProjecao (12º mês da projeção a partir de hoje) */
+  guardadoFimProjecao: number
+  fimProjecao: string
 }
 
 export interface Dados {
@@ -113,6 +120,13 @@ export interface DetalheIrpf {
   imposto: number
 }
 
+export interface AporteMeta {
+  id: number
+  nome: string
+  aporte: number
+  guardado: number
+}
+
 export interface MesProjecao {
   indice: number
   competencia: string
@@ -136,8 +150,17 @@ export interface MesProjecao {
   descontos: number
   liquido: number
   gastos: number
+  /** total aportado nas metas no mês (sai da conta) */
+  aportes: number
+  /** líquido − gastos − aportes */
   sobra: number
+  /** dinheiro disponível em conta (saldo inicial + sobras) */
   acumulado: number
+  /** soma dos saldos das metas ao fim do mês */
+  guardado: number
+  /** acumulado + guardado */
+  patrimonio: number
+  metas: AporteMeta[]
   plr: number
   bonus: number
   /** eventos do mês unidos por " + " (vazio se nenhum) */
@@ -167,6 +190,12 @@ export interface ResumoProjecao {
   mesesNegativos: string[]
   /** maior |sobra| do período: referência para a escala das barras */
   maiorSobraAbsoluta: number
+  /** total aportado em metas no período */
+  aportes: number
+  guardadoInicial: number
+  guardadoFinal: number
+  /** saldoFinal + guardadoFinal */
+  patrimonioFinal: number
 }
 
 export interface Projecao {

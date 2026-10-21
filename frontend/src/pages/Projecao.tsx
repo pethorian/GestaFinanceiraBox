@@ -35,16 +35,22 @@ export function Projecao() {
   )
 
   return (
-    <Page fit title={tituloProjecao(dados.perfil.nome)}subtitle={`${cargo?.nome ?? ''} · ${ms[0].rotulo} a ${ultimo.rotulo}`} aside={aviso || undefined}>
+    <Page fit title={tituloProjecao(dados.perfil.nome)} subtitle={`${cargo?.nome ?? ''} · ${ms[0].rotulo} a ${ultimo.rotulo}`} aside={aviso || undefined}>
       <div className="proj-top">
         <Card className="hero">
           <div>
-            <small>Saldo projetado em {ultimo.rotulo}</small>
+            <small>Saldo disponível em {ultimo.rotulo}</small>
             <div className={`big num ${r.saldoFinal < 0 ? 'neg' : ''}`}>{fmt(r.saldoFinal)}</div>
             <span className={`delta ${r.variacaoSaldo >= 0 ? 'up' : 'down'}`}>
               <Icon name={r.variacaoSaldo >= 0 ? 'up' : 'down'} size={14} />{fmt(Math.abs(r.variacaoSaldo))} em relação a hoje
             </span>
-            <small className="hero-sub">Hoje {fmt(projecao.saldoInicial)} · sobra média {fmt(r.sobraMedia)}/mês</small>
+            <small className="hero-sub">Hoje {fmt(projecao.saldoInicial)} · sobra média {fmt(r.sobraMedia)}/mês{r.aportes > 0 && ', já sem os aportes'}</small>
+            {(r.guardadoFinal > 0 || r.aportes > 0) && (
+              <div className="hero-metas" title="Os aportes saem do saldo disponível, mas continuam seus: ficam guardados nas metas.">
+                <span><small>Guardado em metas</small><b className="num">{fmt(r.guardadoFinal)}</b><small>+{fmt(r.aportes)} no período</small></span>
+                <span><small>Patrimônio</small><b className="num">{fmt(r.patrimonioFinal)}</b><small>disponível + guardado</small></span>
+              </div>
+            )}
           </div>
           <Spark meses={ms} saldoInicial={projecao.saldoInicial} />
         </Card>
@@ -59,11 +65,11 @@ export function Projecao() {
 
       <div className="proj-main">
         <Card className="col">
-          <h2>Fluxo mensal <small>líquido × gastos e saldo acumulado</small></h2>
+          <h2>Fluxo mensal <small>líquido × gastos e aportes, com o saldo disponível</small></h2>
           <div className="fill"><FluxoChart meses={ms} onSelect={setSel} /></div>
         </Card>
         <Card className="col">
-          <h2>Sobra por mês</h2>
+          <h2>Sobra por mês <small>{r.aportes > 0 ? 'já sem os aportes' : ''}</small></h2>
           <div className="mlist">
             {ms.map((m) => (
               <div key={m.indice} className="mrow" tabIndex={0} role="button" onClick={() => setSel(m.indice)} onKeyDown={(e) => e.key === 'Enter' && setSel(m.indice)}>
