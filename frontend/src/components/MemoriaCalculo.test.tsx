@@ -26,7 +26,11 @@ const mesBase = {
   liquido: 4500,
   gastos: 3000,
   sobra: 1500,
+  aportes: 0,
   acumulado: 1500,
+  guardado: 0,
+  patrimonio: 1500,
+  metas: [],
   plr: 0,
   bonus: 0,
   evento: '',
@@ -48,5 +52,30 @@ describe('MemoriaCalculo: aviso de PLR', () => {
   it('não mostra o aviso quando o mês não tem PLR', () => {
     const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
     expect(html).not.toContain(AVISO)
+  })
+})
+
+describe('MemoriaCalculo: aportes em metas', () => {
+  const comMeta = {
+    ...mesBase,
+    aportes: 900,
+    sobra: 600,
+    guardado: 4100,
+    patrimonio: 5700,
+    metas: [{ id: 1, nome: 'Reserva de emergência', aporte: 900, guardado: 4100 }],
+  }
+
+  it('mostra o aporte como saída e o guardado/patrimônio', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={comMeta} onClose={() => {}} />)
+    expect(html).toContain('Aportes em metas')
+    expect(html).toContain('Reserva de emergência')
+    expect(html).toContain('Guardado em metas')
+    expect(html).toContain('Patrimônio')
+  })
+
+  it('sem metas não mostra linhas de aporte', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
+    expect(html).not.toContain('Aportes em metas')
+    expect(html).not.toContain('Guardado em metas')
   })
 })

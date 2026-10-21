@@ -291,3 +291,11 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
   .grow .desc,.grow .nin:last-of-type{grid-column:1/-1}
   .grow .btn.x{grid-column:1/-1;justify-self:end}
 }
+
+/* ---- Projeção: guardado em metas e patrimônio no hero (sem aumentar a altura além do necessário) */
+.hero-metas{display:flex;gap:18px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.hero-metas span{display:grid;grid-template-columns:auto auto;column-gap:6px;align-items:baseline}
+.hero-metas small{font-size:11px}
+.hero-metas small:first-child{grid-column:1/-1}
+.hero-metas b{font-size:14px;letter-spacing:-.01em}
+.hero-metas small:last-child{color:var(--dim);font-size:10.5px;white-space:nowrap}

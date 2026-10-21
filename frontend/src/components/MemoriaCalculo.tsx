@@ -69,9 +69,20 @@ export function MemoriaCalculo({ mes, onClose }: { mes: MesProjecao | null; onCl
           <div className="memo"><h4>Resultado</h4>
             <L a="Líquido" b={fmt(m.liquido)} />
             <L a="Gastos" b={`−${fmt(m.gastos)}`} />
+            {m.aportes > 0 && <L a="Aportes em metas" b={`−${fmt(m.aportes)}`} />}
             <L a={<b>Sobra</b>} b={<b>{fmt(m.sobra)}</b>} c={cls(m.sobra)} />
-            <L a="Saldo acumulado" b={fmt(m.acumulado)} />
+            <L a="Saldo disponível acumulado" b={fmt(m.acumulado)} />
           </div>
+
+          {m.metas.length > 0 && (
+            <div className="memo"><h4>Metas</h4>
+              {m.metas.map((a) => (
+                <Passo key={a.id} a={`${a.nome}: aporte ${fmt(a.aporte)}`} b={fmt(a.guardado)} />
+              ))}
+              <L a="Guardado em metas" b={fmt(m.guardado)} />
+              <L a={<b>Patrimônio (disponível + guardado)</b>} b={<b>{fmt(m.patrimonio)}</b>} />
+            </div>
+          )}
         </>
       )}
     </aside>

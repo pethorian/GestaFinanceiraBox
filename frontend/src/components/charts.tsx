@@ -21,13 +21,14 @@ function useSize(minH: number) {
   return [ref, s] as const
 }
 
-/** Barras de líquido × gastos com a linha de saldo acumulado e tooltip. */
+/** Barras de líquido × saídas (gastos com os aportes em metas empilhados) com a linha do saldo disponível e tooltip. */
 export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect: (i: number) => void }) {
   const [ref, { w: W, h: H }] = useSize(150)
   const [hover, setHover] = useState<number | null>(null)
   const iw = W - P.l - P.r
   const ih = H - P.t - P.b
-  const vals = meses.flatMap((m) => [m.liquido, m.gastos, m.acumulado])
+  // topo da barra de saídas só para a escala do eixo (os valores em si vêm do back end)
+  const vals = meses.flatMap((m) => [m.liquido, m.gastos + m.aportes, m.acumulado])
   const max = Math.max(...vals) * 1.08
   const min = Math.min(0, ...vals) * 1.08
   const y = (v: number) => P.t + ih - ((v - min) / (max - min || 1)) * ih
@@ -41,7 +42,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
 
   return (
     <div className="chartw" ref={ref}>
-      <svg width={W} height={H} role="img" aria-label="Gráfico de líquido, gastos e saldo acumulado por mês">
+      <svg width={W} height={H} role="img" aria-label="Gráfico de líquido, gastos, aportes em metas e saldo disponível por mês">
         <defs>
           <linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#8be9fd" /><stop offset="1" stopColor="#8be9fd" stopOpacity=".35" /></linearGradient>
           <linearGradient id="go" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffb86c" /><stop offset="1" stopColor="#ffb86c" stopOpacity=".35" /></linearGradient>
@@ -56,14 +57,20 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
           )
         })}
         {meses.map((m, i) => (
-          <g key={m.indice}>{bar(x(i) - bw - 1.5, m.liquido, 'url(#gl)')}{bar(x(i) + 1.5, m.gastos, 'url(#go)')}</g>
+          <g key={m.indice}>
+            {bar(x(i) - bw - 1.5, m.liquido, 'url(#gl)')}{bar(x(i) + 1.5, m.gastos, 'url(#go)')}
+            {m.aportes > 0 && (() => {
+              const alt = Math.max(0, y(0) - y(m.aportes)) // aporte empilhado sobre os gastos
+              return <rect x={x(i) + 1.5} y={y(m.gastos) - alt} width={bw} height={alt} rx={3} fill="#bd93f9" fillOpacity={0.85} />
+            })()}
+          </g>
         ))}
         <polyline points={pontos} fill="none" stroke="#50fa7b" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
         {meses.map((m, i) => (
           <g key={m.indice}>
             <rect
               className="hv" x={P.l + (iw * i) / 12} y={P.t} width={iw / 12} height={ih}
-              tabIndex={0} role="button" aria-label={`${m.rotulo}: sobra ${fmt(m.sobra)}, saldo ${fmt(m.acumulado)}`}
+              tabIndex={0} role="button" aria-label={`${m.rotulo}: sobra ${fmt(m.sobra)}, saldo disponível ${fmt(m.acumulado)}`}
               onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(i)} onBlur={() => setHover(null)}
               onClick={() => onSelect(i)} onKeyDown={(e) => e.key === 'Enter' && onSelect(i)}
@@ -75,7 +82,8 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
         <g transform={`translate(${P.l},4)`}>
           <circle cx="5" cy="5" r="4.5" fill="#8be9fd" /><text x="14" y="9">Líquido</text>
           <circle cx="75" cy="5" r="4.5" fill="#ffb86c" /><text x="84" y="9">Gastos</text>
-          <circle cx="140" cy="5" r="4.5" fill="#50fa7b" /><text x="149" y="9">Saldo acumulado</text>
+          <circle cx="140" cy="5" r="4.5" fill="#bd93f9" /><text x="149" y="9">Aportes</text>
+          <circle cx="210" cy="5" r="4.5" fill="#50fa7b" /><text x="219" y="9">Saldo disponível</text>
         </g>
       </svg>
       <div
@@ -83,7 +91,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
         style={h ? {
           opacity: 1,
           left: Math.min(W - 95, Math.max(95, x(hover!))),
-          top: Math.max(24, y(Math.max(h.liquido, h.gastos, h.acumulado))),
+          top: Math.max(24, y(Math.max(h.liquido, h.gastos + h.aportes, h.acumulado))),
         } : undefined}
       >
         {h && (
@@ -91,8 +99,10 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
             <b>{tituloCompetencia(h.competencia)}{h.evento ? ` · ${h.evento}` : ''}</b>
             <div><span>Líquido</span><span className="num">{fmt(h.liquido)}</span></div>
             <div><span>Gastos</span><span className="num">{fmt(h.gastos)}</span></div>
+            {h.aportes > 0 && <div><span>Aportes em metas</span><span className="num">{fmt(h.aportes)}</span></div>}
             <div><span>Sobra</span><span className={`num ${cls(h.sobra)}`}>{fmt(h.sobra)}</span></div>
-            <div><span>Saldo</span><span className="num">{fmt(h.acumulado)}</span></div>
+            <div><span>Saldo disponível</span><span className="num">{fmt(h.acumulado)}</span></div>
+            {h.guardado > 0 && <div><span>Guardado em metas</span><span className="num">{fmt(h.guardado)}</span></div>}
           </>
         )}
       </div>
@@ -100,7 +110,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
   )
 }
 
-/** Mini gráfico da evolução do saldo acumulado. */
+/** Mini gráfico da evolução do saldo disponível (acumulado, já sem os aportes). */
 export function Spark({ meses, saldoInicial }: { meses: MesProjecao[]; saldoInicial: number }) {
   const [ref, { w, h }] = useSize(60)
   const pad = 8
