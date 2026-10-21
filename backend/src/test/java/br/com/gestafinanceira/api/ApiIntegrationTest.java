@@ -501,6 +501,57 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.plrAnual", is(20000)));
     }
 
+    @Test
+    void nomeDoPerfilPadraoENuloEAparadoAoGravar() throws Exception {
+        mvc.perform(get("/api/perfil")).andExpect(status().isOk()).andExpect(jsonPath("$.nome").doesNotExist());
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"  Ana Maria  \""))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nome", is("Ana Maria")));
+        mvc.perform(get("/api/perfil")).andExpect(jsonPath("$.nome", is("Ana Maria")));
+        mvc.perform(get("/api/dados")).andExpect(jsonPath("$.perfil.nome", is("Ana Maria")));
+    }
+
+    @Test
+    void nomeVazioOuEmBrancoLimpaParaNulo() throws Exception {
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"Ana\"")).andExpect(status().isOk());
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"   \""))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nome").value(org.hamcrest.Matchers.nullValue()));
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"Ana\"")).andExpect(status().isOk());
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"\""))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nome").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void nomeComMaisDe60CaracteresRetorna400() throws Exception {
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"" + "a".repeat(61) + "\""))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.detalhes", hasSize(1)));
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"" + "a".repeat(60) + "\""))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.nome", is("a".repeat(60))));
+    }
+
+    @Test
+    void putSemNomeMantemONomeAtual() throws Exception {
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"Ana\"")).andExpect(status().isOk());
+        json(put("/api/perfil"), perfilComNome(cargoId(0), "")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", is("Ana")));
+        mvc.perform(get("/api/perfil")).andExpect(jsonPath("$.nome", is("Ana")));
+    }
+
+    @Test
+    void restaurarPadraoMantemONome() throws Exception {
+        json(put("/api/perfil"), perfilComNome(cargoId(0), ", \"nome\": \"Ana\"")).andExpect(status().isOk());
+        mvc.perform(post("/api/dados/restaurar")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil.nome", is("Ana")))
+                .andExpect(jsonPath("$.perfil.delta", is(228)));
+    }
+
+    /** Perfil válido (padrão) com o trecho extra do campo nome, já com vírgula inicial quando houver. */
+    private String perfilComNome(Long cargoId, String trechoNome) {
+        return """
+                {"cargoId": %d, "delta": 228, "diasSobreaviso": 0, "filhos": 1, "homeOffice": true, "vrVa": false,
+                 "saude": "DEP", "dependentes": 2, "funcefPct": 6, "valeTransporte": true, "sindicato": true,
+                 "saldoInicial": 3200%s}""".formatted(cargoId, trechoNome);
+    }
+
     private Long cargoId(int posicao) throws Exception {
         String r = mvc.perform(get("/api/parametros/cargos")).andReturn().getResponse().getContentAsString();
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"id\":(\\d+)").matcher(r);

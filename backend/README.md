@@ -36,7 +36,7 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 
 | Recurso | Endpoints |
 |---|---|
-| Perfil | `GET/PUT /api/perfil` |
+| Perfil | `GET/PUT /api/perfil` (campo `nome`: opcional, até 60 caracteres, aparado; vazio ou em branco grava `null`; PUT sem `nome` mantém o atual; excedeu → 400) |
 | Férias | `GET/PUT /api/ferias` |
 | 13º | `GET/PUT /api/decimo` (lista de `{mes, percentual}`; soma ≤ 100), `POST /api/decimo/parcelas` (acrescenta o que falta para 100%) |
 | PLR | `GET/PUT /api/plr` (`{ativo, parcelas:[{mes, percentual, valor, valorBruto, desconto, valorLiquido}], totalPercentual, aviso, estimativaAnual}`; no PUT valem `ativo` (omitido mantém), `mes`, `percentual` e `valor` (bruto opcional); soma dos % ≤ 100, meses únicos; ativar sem parcelas grava as padrão set 50% + mar 50%) |
@@ -45,7 +45,7 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 | Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` |
 | Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}` |
 | Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM` |
-| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR inativo (parcelas set/mar 50%) e bônus inativo; não toca nos parâmetros) |
+| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR inativo (parcelas set/mar 50%) e bônus inativo; mantém o `nome` do perfil; não toca nos parâmetros) |
 | Vigentes | `GET /api/parametros/vigentes?data=` (cargos, deltas, INSS, IRPF e benefícios vigentes) |
 | Cargos | `GET /api/parametros/cargos?data=`, `POST`, `GET/PUT/DELETE /api/parametros/cargos/{id}` |
 | Deltas | `GET/PUT /api/parametros/deltas`, `DELETE /api/parametros/deltas/{inicio}` |

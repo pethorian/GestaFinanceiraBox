@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtAliquota, fmtPct, rotuloCompetencia, rotuloCompetenciaLongo, tituloCompetencia } from './format'
+import { fmtAliquota, fmtPct, rotuloCompetencia, rotuloCompetenciaLongo, tituloCompetencia, tituloProjecao } from './format'
 
 describe('formatação', () => {
   it('monta rótulos a partir da competência', () => {
@@ -16,5 +16,11 @@ describe('formatação', () => {
     expect(fmtAliquota(0.14)).toBe('14%')
     expect(fmtAliquota(0.075)).toBe('7,5%')
     expect(fmtPct(6)).toBe('6%')
+  })
+  it('personaliza o título da projeção com o nome, se houver', () => {
+    expect(tituloProjecao('Ana')).toBe('Ana, aqui está sua projeção para os próximos 12 meses')
+    expect(tituloProjecao(null)).toBe('Projeção dos próximos 12 meses')
+    expect(tituloProjecao('')).toBe('Projeção dos próximos 12 meses')
+    expect(tituloProjecao('   ')).toBe('Projeção dos próximos 12 meses')
   })
 })

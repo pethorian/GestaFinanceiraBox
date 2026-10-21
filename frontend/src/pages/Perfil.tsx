@@ -41,6 +41,14 @@ export function Perfil() {
       <div className="cols">
         <div className="stack">
           <Card>
+            <h2>Identificação</h2>
+            <Field label="Seu nome" hint="Opcional. Aparece no título da projeção.">
+              <input type="text" maxLength={60} placeholder="Como devemos te chamar?" value={p.nome ?? ''}
+                onChange={(e) => editarPerfil({ nome: e.target.value })} />
+            </Field>
+          </Card>
+
+          <Card>
             <h2>Cargo e remuneração</h2>
             <div className="row2">
               <Field label="Cargo / função">

@@ -33,3 +33,9 @@ export const tituloCompetencia = (c: string) => {
   const { ano, mes } = partes(c)
   return `${MES_LONGO[mes - 1]} ${ano}`
 }
+
+/** Título da projeção: personaliza com o nome do usuário, se ele tiver informado um. */
+export const tituloProjecao = (nome: string | null | undefined) => {
+  const n = nome?.trim()
+  return n ? `${n}, aqui está sua projeção para os próximos 12 meses` : 'Projeção dos próximos 12 meses'
+}
