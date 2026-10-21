@@ -1,10 +1,15 @@
 package br.com.gestafinanceira.api.dto;
 
+import br.com.gestafinanceira.domain.calculo.adicionais.DestinoValor;
+import br.com.gestafinanceira.domain.calculo.adicionais.TotaisAdicionais;
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
 import br.com.gestafinanceira.domain.calculo.saude.Faixas;
+import br.com.gestafinanceira.domain.calculo.saude.SaudeAdicionais;
 import br.com.gestafinanceira.domain.calculo.saude.StatusFaixa;
+import br.com.gestafinanceira.domain.modelo.EventoAdicional;
 import br.com.gestafinanceira.domain.modelo.GrupoGasto;
 import br.com.gestafinanceira.domain.modelo.Saude;
+import br.com.gestafinanceira.domain.modelo.TipoDestino;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -163,6 +168,8 @@ public final class Dtos {
      * dos saldos das metas hoje e ao fim do último mês; {@code patrimonioFinal} = saldoFinal + guardadoFinal.
      * {@code previdenciaInicial}/{@code previdenciaFinal}: saldo FUNCEF hoje e ao fim do último mês;
      * {@code patrimonioTotalFinal} = patrimonioFinal + previdenciaFinal.
+     * {@code gastosAdicionais}/{@code reservasAdicionais}: somas do período do plano de uso do 13º/PLR;
+     * {@code adicionais}: totais por tipo de destino (o {@code guardadoFinal} inclui a reserva dos adicionais).
      */
     public record ResumoProjecaoDto(
             BigDecimal receitas, BigDecimal descontos, BigDecimal liquido,
@@ -171,7 +178,8 @@ public final class Dtos {
             DestaqueMesDto melhorMes, DestaqueMesDto piorMes, List<YearMonth> mesesNegativos,
             BigDecimal maiorSobraAbsoluta, BigDecimal aportes, BigDecimal guardadoInicial, BigDecimal guardadoFinal,
             BigDecimal patrimonioFinal, BigDecimal previdenciaInicial, BigDecimal previdenciaFinal,
-            BigDecimal patrimonioTotalFinal) {
+            BigDecimal patrimonioTotalFinal, BigDecimal gastosAdicionais, BigDecimal reservasAdicionais,
+            ResumoAdicionaisDto adicionais) {
     }
 
     public record CategoriaResumoDto(String categoria, BigDecimal mediaMensal) {
@@ -254,18 +262,55 @@ public final class Dtos {
             boolean participa, BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
             Faixas<BigDecimal> percentuais, Faixas<BigDecimal> diferenca, Faixas<StatusFaixa> status,
             BigDecimal sobraLivre, BigDecimal aporteSugerido, List<CategoriaSaudeDto> categorias,
-            List<String> diagnostico, PoupancaDetalhe poupancaDetalhe) {
+            List<String> diagnostico, PoupancaDetalhe poupancaDetalhe, SaudeAdicionais.Resultado adicionais) {
     }
 
     /** Composição da poupança mensal: média dos aportes em metas e contribuição FUNCEF do participante. */
     public record PoupancaDetalhe(BigDecimal metas, BigDecimal funcef) {
     }
 
+    // ---- plano de uso do 13º e do PLR ---------------------------------------------------------
+
+    /**
+     * Entrada de {@code PUT /api/adicionais/{evento}/destinos} (um item da lista). Validado no serviço:
+     * {@code nome} 1..60 depois de aparado, {@code tipo} obrigatório, {@code percentual} 0 &lt; p ≤ 100 (2 casas),
+     * {@code metaId} opcional, só com {@code RESERVA} e de meta existente.
+     */
+    public record DestinoEntradaDto(String nome, TipoDestino tipo, BigDecimal percentual, Long metaId) {
+    }
+
+    /** Destino gravado; {@code metaNome} é o nome da meta ligada (nulo sem meta). */
+    public record DestinoDto(Long id, String nome, TipoDestino tipo, BigDecimal percentual, Long metaId,
+                             String metaNome) {
+    }
+
+    /** Prévia de uma parcela do evento nos 12 meses a partir do mês atual. */
+    public record PreviaAdicionalDto(YearMonth mes, BigDecimal liquido, List<DestinoValor> destinos,
+                                     BigDecimal semDestino) {
+    }
+
+    /**
+     * Plano de uso de um adicional. {@code ativo}: o evento entra na projeção (a prévia é calculada mesmo inativo).
+     * {@code semDestinoPercentual} = 100 − {@code totalPercentual}.
+     */
+    public record PlanoAdicionalDto(EventoAdicional evento, boolean ativo, List<DestinoDto> destinos,
+                                    BigDecimal totalPercentual, BigDecimal semDestinoPercentual,
+                                    List<PreviaAdicionalDto> previa) {
+    }
+
+    public record PlanosAdicionaisDto(PlanoAdicionalDto decimo, PlanoAdicionalDto plr) {
+    }
+
+    /** Totais do período por tipo de destino: por evento e no total. */
+    public record ResumoAdicionaisDto(TotaisAdicionais decimo, TotaisAdicionais plr, TotaisAdicionais total) {
+    }
+
     // ---- agregado -----------------------------------------------------------------------------
 
     public record DadosDto(
             PerfilDto perfil, FeriasDto ferias, List<LancamentoDto> lancamentos,
-            DecimoDto decimo, List<MetaDto> metas, BonusDto bonus, PlrDto plr, SaudeFinanceiraDto saudeFinanceira) {
+            DecimoDto decimo, List<MetaDto> metas, BonusDto bonus, PlrDto plr, SaudeFinanceiraDto saudeFinanceira,
+            PlanosAdicionaisDto adicionais) {
     }
 
     public record ErroDto(int status, String erro, String mensagem, List<String> detalhes) {

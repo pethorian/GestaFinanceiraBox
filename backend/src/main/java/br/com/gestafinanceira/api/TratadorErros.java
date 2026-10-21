@@ -1,6 +1,7 @@
 package br.com.gestafinanceira.api;
 
 import br.com.gestafinanceira.api.dto.Dtos.ErroDto;
+import br.com.gestafinanceira.application.Erros.DadosInvalidos;
 import br.com.gestafinanceira.application.Erros.NaoEncontrado;
 import br.com.gestafinanceira.application.Erros.RegraDeNegocio;
 import java.util.List;
@@ -29,6 +30,11 @@ public class TratadorErros {
     @ExceptionHandler(RegraDeNegocio.class)
     ResponseEntity<ErroDto> regra(RegraDeNegocio e) {
         return resposta(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage(), List.of());
+    }
+
+    @ExceptionHandler(DadosInvalidos.class)
+    ResponseEntity<ErroDto> dadosInvalidos(DadosInvalidos e) {
+        return resposta(HttpStatus.BAD_REQUEST, e.getMessage(), e.detalhes());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

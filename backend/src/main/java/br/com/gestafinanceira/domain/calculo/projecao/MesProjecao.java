@@ -1,6 +1,7 @@
 package br.com.gestafinanceira.domain.calculo.projecao;
 
 import br.com.gestafinanceira.domain.calculo.Dinheiro;
+import br.com.gestafinanceira.domain.calculo.adicionais.AdicionalMes;
 import br.com.gestafinanceira.domain.calculo.irpf.DetalheIrpf;
 import br.com.gestafinanceira.domain.calculo.metas.AporteMeta;
 import java.math.BigDecimal;
@@ -21,6 +22,14 @@ import java.util.List;
  * parte da contribuição retida na última parcela do 13º (já dentro de {@code descontoDecimo}); {@code previdencia}
  * é o saldo FUNCEF ao fim do mês (saldo informado + contribuições acumuladas, sem rendimento). {@code patrimonio}
  * segue sendo acumulado + guardado; {@code patrimonioTotal} = patrimonio + previdencia.
+ *
+ * <p>Plano de uso do 13º/PLR: {@code adicionais} traz, para cada parcela recebida no mês (13º e/ou PLR ativos),
+ * o líquido e a divisão entre os destinos. {@code gastosAdicionais} = destinos LAZER + OBRIGATORIO (saem da conta,
+ * à parte de {@code gastos}); {@code reservasAdicionais} = destinos RESERVA (saem da conta e entram em guardado:
+ * na meta ligada, em {@code metas[].aporteAdicional}, ou na reserva dos adicionais). {@code sobra} = líquido −
+ * gastos − aportes − gastosAdicionais − reservasAdicionais. {@code guardadoReservaAdicionais} é o saldo acumulado
+ * da reserva dos adicionais (sem meta) ao fim do mês, já somado em {@code guardado} (e portanto em
+ * {@code patrimonio} e {@code patrimonioTotal}).
  */
 public record MesProjecao(
         int indice,
@@ -58,7 +67,11 @@ public record MesProjecao(
         List<AporteMeta> metas,
         BigDecimal funcefDecimo,
         BigDecimal previdencia,
-        BigDecimal patrimonioTotal) {
+        BigDecimal patrimonioTotal,
+        List<AdicionalMes> adicionais,
+        BigDecimal gastosAdicionais,
+        BigDecimal reservasAdicionais,
+        BigDecimal guardadoReservaAdicionais) {
 
     /** Mesmo mês com o saldo disponível em conta informado (o patrimônio acompanha). */
     public MesProjecao comAcumulado(BigDecimal valor) {
@@ -66,7 +79,8 @@ public record MesProjecao(
                 inss, irpf, funcef, saude, valeTransporte, sindicato, descontoDecimo, receitas, descontos,
                 liquido, gastos, aportes, sobra, valor, guardado, Dinheiro.arredondar(valor.add(guardado)), evento,
                 baseInss, tetoInssAplicado, plrBruto, plrDesconto, metas, funcefDecimo, previdencia,
-                Dinheiro.arredondar(valor.add(guardado).add(previdencia)));
+                Dinheiro.arredondar(valor.add(guardado).add(previdencia)),
+                adicionais, gastosAdicionais, reservasAdicionais, guardadoReservaAdicionais);
     }
 
     /** Mesmo mês com o saldo FUNCEF ao fim do mês informado (o patrimônio total acompanha). */
@@ -75,6 +89,7 @@ public record MesProjecao(
                 inss, irpf, funcef, saude, valeTransporte, sindicato, descontoDecimo, receitas, descontos,
                 liquido, gastos, aportes, sobra, acumulado, guardado, patrimonio, evento,
                 baseInss, tetoInssAplicado, plrBruto, plrDesconto, metas, funcefDecimo, saldo,
-                Dinheiro.arredondar(patrimonio.add(saldo)));
+                Dinheiro.arredondar(patrimonio.add(saldo)),
+                adicionais, gastosAdicionais, reservasAdicionais, guardadoReservaAdicionais);
     }
 }
