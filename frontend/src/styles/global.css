@@ -293,7 +293,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 }
 
 /* ---- Projeção: guardado em metas e patrimônio no hero (sem aumentar a altura além do necessário) */
-.hero-metas{display:flex;gap:18px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.hero-metas{display:flex;justify-content:space-between;gap:18px;grid-column:1/-1;margin-top:0;padding-top:6px;border-top:1px solid var(--line)}
 .hero-metas span{display:grid;grid-template-columns:auto auto;column-gap:6px;align-items:baseline}
 .hero-metas small{font-size:11px}
 .hero-metas small:first-child{grid-column:1/-1}
@@ -420,5 +420,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 /* ---- FUNCEF como reserva: texto + saldo atual no perfil; composição da poupança na Saúde financeira */
 .funcef-saldo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:6px}
 .funcef-saldo>small{color:var(--mut);flex:1;min-width:0}
-.funcef-saldo .f{flex:none;width:170px}
+.funcef-saldo .f{flex:none;width:220px}
 .sf-poup p.sf-split{display:flex;flex-wrap:wrap;gap:2px 10px;margin:0 0 8px;color:var(--mut)}
+.hero-metas.tres span{grid-template-columns:auto;row-gap:0}
+.hero-metas.tres small:last-child{display:none}
