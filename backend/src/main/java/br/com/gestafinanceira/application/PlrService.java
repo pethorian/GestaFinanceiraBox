@@ -84,6 +84,12 @@ public class PlrService {
         return perfil.entidade().plrAtivo ? listar() : List.of();
     }
 
+    /** Parcelas gravadas, mesmo com o PLR inativo (prévia do plano de uso). */
+    @Transactional(readOnly = true)
+    public List<ParcelaPlr> parcelasCadastradas() {
+        return listar();
+    }
+
     /** Padrão: inativo, com as parcelas setembro 50% e março 50% prontas. */
     public void restaurarPadrao() {
         gravar(padrao());

@@ -21,14 +21,28 @@ export function useSize(minH: number, minW = 300) {
   return [ref, s] as const
 }
 
-/** Barras de líquido × saídas (gastos com os aportes em metas empilhados) com a linha do saldo disponível e tooltip. */
+/**
+ * Saídas do mês na ordem de empilhamento. As do 13º/PLR usam a mesma cor da saída equivalente em tom claro:
+ * gastos com adicionais (lazer/obrigatório) junto dos gastos; reservas dos adicionais junto dos aportes.
+ */
+const segmentosSaidas = (m: MesProjecao) => [
+  { chave: 'g', v: m.gastos, fill: 'url(#go)', op: 1 },
+  { chave: 'ga', v: m.gastosAdicionais, fill: '#ffb86c', op: 0.5 },
+  { chave: 'a', v: m.aportes, fill: '#bd93f9', op: 0.85 },
+  { chave: 'ra', v: m.reservasAdicionais, fill: '#bd93f9', op: 0.45 },
+]
+/** topo da barra de saídas: só para a escala do eixo e a posição do tooltip */
+const topoSaidas = (m: MesProjecao) => segmentosSaidas(m).reduce((a, s) => a + Math.max(0, s.v), 0)
+
+/** Barras de líquido × saídas (gastos, aportes e o uso do 13º/PLR empilhados) com a linha do saldo disponível e tooltip. */
 export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect: (i: number) => void }) {
   const [ref, { w: W, h: H }] = useSize(150)
   const [hover, setHover] = useState<number | null>(null)
   const iw = W - P.l - P.r
   const ih = H - P.t - P.b
   // topo da barra de saídas só para a escala do eixo (os valores em si vêm do back end)
-  const vals = meses.flatMap((m) => [m.liquido, m.gastos + m.aportes, m.acumulado])
+  const vals = meses.flatMap((m) => [m.liquido, topoSaidas(m), m.acumulado])
+  const temAdicionais = meses.some((m) => m.gastosAdicionais > 0 || m.reservasAdicionais > 0)
   const max = Math.max(...vals) * 1.08
   const min = Math.min(0, ...vals) * 1.08
   const y = (v: number) => P.t + ih - ((v - min) / (max - min || 1)) * ih
@@ -37,6 +51,16 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
   const bar = (xx: number, v: number, fill: string) => (
     <rect x={xx} y={y(v)} width={bw} height={Math.max(0, y(0) - y(v))} rx={4} fill={fill} />
   )
+  /** Saídas empilhadas a partir da base (gastos, gastos com adicionais, aportes, reservas dos adicionais), com 1,5px de respiro. */
+  const pilhaSaidas = (m: MesProjecao, xx: number) => {
+    let topo = y(0)
+    return segmentosSaidas(m).filter((s) => s.v > 0).map((s, k) => {
+      const respiro = k > 0 ? 1.5 : 0
+      const alt = Math.max(0, y(0) - y(s.v) - respiro)
+      topo -= respiro + alt
+      return <rect key={s.chave} x={xx} y={topo} width={bw} height={alt} rx={k === 0 ? 4 : 3} fill={s.fill} fillOpacity={s.op} />
+    })
+  }
   const pontos = meses.map((m, i) => `${x(i)},${y(m.acumulado)}`).join(' ')
   const h = hover !== null ? meses[hover] : null
 
@@ -58,11 +82,8 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
         })}
         {meses.map((m, i) => (
           <g key={m.indice}>
-            {bar(x(i) - bw - 1.5, m.liquido, 'url(#gl)')}{bar(x(i) + 1.5, m.gastos, 'url(#go)')}
-            {m.aportes > 0 && (() => {
-              const alt = Math.max(0, y(0) - y(m.aportes)) // aporte empilhado sobre os gastos
-              return <rect x={x(i) + 1.5} y={y(m.gastos) - alt} width={bw} height={alt} rx={3} fill="#bd93f9" fillOpacity={0.85} />
-            })()}
+            {bar(x(i) - bw - 1.5, m.liquido, 'url(#gl)')}
+            {pilhaSaidas(m, x(i) + 1.5)}
           </g>
         ))}
         <polyline points={pontos} fill="none" stroke="#50fa7b" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
@@ -84,6 +105,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
           <circle cx="75" cy="5" r="4.5" fill="#ffb86c" /><text x="84" y="9">Gastos</text>
           <circle cx="140" cy="5" r="4.5" fill="#bd93f9" /><text x="149" y="9">Aportes</text>
           <circle cx="210" cy="5" r="4.5" fill="#50fa7b" /><text x="219" y="9">Saldo disponível</text>
+          {temAdicionais && <><rect x="320" y="0.5" width="9" height="9" rx="2.5" fill="#ffb86c" fillOpacity={0.5} /><text x="334" y="9">tom claro: 13º/PLR</text></>}
         </g>
       </svg>
       <div
@@ -91,7 +113,7 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
         style={h ? {
           opacity: 1,
           left: Math.min(W - 95, Math.max(95, x(hover!))),
-          top: Math.max(24, y(Math.max(h.liquido, h.gastos + h.aportes, h.acumulado))),
+          top: Math.max(24, y(Math.max(h.liquido, topoSaidas(h), h.acumulado))),
         } : undefined}
       >
         {h && (
@@ -100,6 +122,8 @@ export function FluxoChart({ meses, onSelect }: { meses: MesProjecao[]; onSelect
             <div><span>Líquido</span><span className="num">{fmt(h.liquido)}</span></div>
             <div><span>Gastos</span><span className="num">{fmt(h.gastos)}</span></div>
             {h.aportes > 0 && <div><span>Aportes em metas</span><span className="num">{fmt(h.aportes)}</span></div>}
+            {h.gastosAdicionais > 0 && <div><span>Gastos com adicionais</span><span className="num">{fmt(h.gastosAdicionais)}</span></div>}
+            {h.reservasAdicionais > 0 && <div><span>Reservas dos adicionais</span><span className="num">{fmt(h.reservasAdicionais)}</span></div>}
             <div><span>Sobra</span><span className={`num ${cls(h.sobra)}`}>{fmt(h.sobra)}</span></div>
             <div><span>Saldo disponível</span><span className="num">{fmt(h.acumulado)}</span></div>
             {h.guardado > 0 && <div><span>Guardado em metas</span><span className="num">{fmt(h.guardado)}</span></div>}

@@ -7,7 +7,9 @@ import br.com.gestafinanceira.api.dto.Dtos.SaudeFinanceiraDto;
 import br.com.gestafinanceira.domain.calculo.Dinheiro;
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
 import br.com.gestafinanceira.domain.calculo.projecao.ProjetorMensal;
+import br.com.gestafinanceira.api.dto.Dtos.ProjecaoDto;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020;
+import br.com.gestafinanceira.domain.calculo.saude.SaudeAdicionais;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020.Resultado;
 import br.com.gestafinanceira.domain.modelo.GrupoGasto;
 import br.com.gestafinanceira.infra.persistencia.CategoriaRepo;
@@ -76,14 +78,20 @@ public class SaudeFinanceiraService {
             if (!grupos.containsKey(e.getKey())) necessidades = necessidades.add(e.getValue());
         }
 
-        BigDecimal aportes = projecao.projetar(null).resumo().aportes();
+        ProjecaoDto proj = projecao.projetar(null);
+        BigDecimal aportes = proj.resumo().aportes();
         BigDecimal poupanca = Dinheiro.arredondar(aportes.divide(BigDecimal.valueOf(ProjetorMensal.MESES), 10,
                 RoundingMode.HALF_UP));
 
         Resultado r = Metodo503020.calcular(renda, necessidades, desejos, poupanca, funcef);
+        // Bloco à parte: 13º e PLR do período (não entram no 50/30/20 mensal, que usa a renda de mês comum)
+        SaudeAdicionais.Resultado adicionais = SaudeAdicionais.calcular(
+                proj.meses().stream().flatMap(m -> m.adicionais().stream()).toList());
+        List<String> diagnostico = new ArrayList<>(r.diagnostico());
+        diagnostico.addAll(adicionais.diagnostico());
         return new SaudeFinanceiraDto(p.metodo503020, r.rendaMensal(), r.recomendado(), r.atual(), r.percentuais(),
-                r.diferenca(), r.status(), r.sobraLivre(), r.aporteSugerido(), lista, r.diagnostico(),
-                new PoupancaDetalhe(r.poupancaDetalhe().metas(), r.poupancaDetalhe().funcef()));
+                r.diferenca(), r.status(), r.sobraLivre(), r.aporteSugerido(), lista, diagnostico,
+                new PoupancaDetalhe(r.poupancaDetalhe().metas(), r.poupancaDetalhe().funcef()), adicionais);
     }
 
     public SaudeFinanceiraDto definirParticipacao(boolean participa) {

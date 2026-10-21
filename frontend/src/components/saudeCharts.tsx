@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { fmt } from '../domain/format'
 import { FAIXAS, fmtPctFaixa, rotuloStatus } from '../domain/saude'
-import type { FaixaMetodo, SaudeFinanceira } from '../domain/types'
+import type { FaixaMetodo, SaudeFinanceira, StatusFaixa } from '../domain/types'
 import { Icon } from './Icon'
 import { useSize } from './charts'
 
@@ -83,7 +83,12 @@ function Eixo({ escala }: { escala: number }) {
 }
 
 export function StatusPill({ faixa, saude }: { faixa: FaixaMetodo; saude: SaudeFinanceira }) {
-  const s = rotuloStatus(faixa, saude.status[faixa])
+  return <StatusFaixaPill faixa={faixa} status={saude.status[faixa]} />
+}
+
+/** Pílula de status de uma faixa (ícone + texto, nunca só cor). */
+export function StatusFaixaPill({ faixa, status }: { faixa: FaixaMetodo; status: StatusFaixa }) {
+  const s = rotuloStatus(faixa, status)
   return (
     <span className={`sf-st ${s.tom}`}>
       <Icon name={s.tom === 'ok' ? 'check' : 'warn'} size={13} strokeWidth={2.2} />{s.texto}

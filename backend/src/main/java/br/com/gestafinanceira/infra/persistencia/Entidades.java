@@ -1,6 +1,8 @@
 package br.com.gestafinanceira.infra.persistencia;
 
+import br.com.gestafinanceira.domain.modelo.EventoAdicional;
 import br.com.gestafinanceira.domain.modelo.GrupoGasto;
+import br.com.gestafinanceira.domain.modelo.TipoDestino;
 import br.com.gestafinanceira.domain.modelo.Saude;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import jakarta.persistence.Column;
@@ -185,5 +187,18 @@ public final class Entidades {
         @Column(name = "valor_atual") public BigDecimal valorAtual;
         @Column(name = "aporte_mensal") public BigDecimal aporteMensal;
         public String banco;
+    }
+
+    /** Fatia do plano de uso do 13º/PLR (V12). {@code metaId} é anulado pelo banco quando a meta é apagada. */
+    @Entity(name = "DestinoAdicional")
+    @Table(name = "destino_adicional")
+    public static class DestinoAdicionalEntidade {
+        @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
+        @Enumerated(EnumType.STRING) public EventoAdicional evento;
+        public String nome;
+        @Enumerated(EnumType.STRING) public TipoDestino tipo;
+        public BigDecimal percentual;
+        @Column(name = "meta_id") public Long metaId;
+        public int ordem;
     }
 }

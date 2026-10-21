@@ -45,6 +45,24 @@ public final class CalculadoraAportes {
         return r;
     }
 
+    /**
+     * Mês com reserva extra vinda do plano de uso do 13º/PLR ({@code extras}, na mesma ordem das metas): o extra
+     * entra <b>antes</b> do aporte mensal, que é calculado sobre o guardado já com o extra (aporta só o que falta,
+     * ou zero se o extra já cobriu o alvo). O extra não é limitado ao alvo e antecipa a conclusão da meta.
+     */
+    public static List<AporteMeta> aportarMes(List<MetaCalculo> metas, List<BigDecimal> guardadoAntes,
+                                              List<BigDecimal> extras) {
+        List<AporteMeta> r = new ArrayList<>(metas.size());
+        for (int i = 0; i < metas.size(); i++) {
+            MetaCalculo m = metas.get(i);
+            BigDecimal extra = Dinheiro.arredondar(extras.get(i));
+            BigDecimal antes = Dinheiro.arredondar(guardadoAntes.get(i).add(extra));
+            BigDecimal ap = aporte(m, antes);
+            r.add(new AporteMeta(m.id(), m.nome(), ap, Dinheiro.arredondar(antes.add(ap)), extra));
+        }
+        return r;
+    }
+
     /** Saldo guardado previsto da meta ao fim de {@code meses} meses de aportes (o mesmo passo da projeção). */
     public static BigDecimal guardadoApos(MetaCalculo meta, int meses) {
         BigDecimal g = Dinheiro.arredondar(meta.valorAtual());
