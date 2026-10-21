@@ -3,7 +3,7 @@ import { api } from '../api/api'
 import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
-  ParcelaDecimo, Perfil, Projecao, ResumoGastos,
+  ParcelaDecimo, ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos,
 } from '../domain/types'
 
 /**
@@ -27,7 +27,9 @@ interface AppCtx {
   editarFerias: (patch: Partial<Ferias>) => void
   editarDecimo: (parcelas: ParcelaDecimo[]) => void
   adicionarParcelaDecimo: () => Promise<void>
-  editarPlr: (parcelas: ParcelaDecimo[]) => void
+  /** liga/desliga o PLR; ao ligar, o back end devolve as parcelas padrão */
+  alternarPlr: (ativo: boolean) => Promise<void>
+  editarPlr: (parcelas: ParcelaPlr[]) => void
   adicionarParcelaPlr: () => Promise<void>
   editarBonus: (patch: Partial<Bonus>) => void
   adicionarLancamento: () => Promise<void>
@@ -153,13 +155,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mudar((d) => ({ ...d, decimo }))
     }),
 
-    editarPlr: (parcelas: ParcelaDecimo[]) => {
+    alternarPlr: (ativo: boolean) => executar(async () => {
+      mudar((d) => ({ ...d, plr: { ...d.plr, ativo } }))
+      const salvo: Plr = await api.salvarPlr({ ativo, parcelas: cargaRef.current!.dados.plr.parcelas })
+      // ao ligar, as parcelas padrão vêm do servidor: a tela recebe o PLR inteiro
+      mudar((d) => ({ ...d, plr: salvo }))
+    }),
+    editarPlr: (parcelas: ParcelaPlr[]) => {
       mudar((d) => ({ ...d, plr: { ...d.plr, parcelas } }))
       agendar('plr', async () => {
-        const salvo = await api.salvarPlr(cargaRef.current!.dados.plr.parcelas)
+        const atual = cargaRef.current!.dados.plr
+        const salvo: Plr = await api.salvarPlr({ ativo: atual.ativo, parcelas: atual.parcelas })
+        // só os campos calculados pelo back end; os digitados continuam como estão na tela
         mudar((d) => ({
           ...d,
-          plr: { ...d.plr, totalPercentual: salvo.totalPercentual, aviso: salvo.aviso, estimativaAnual: salvo.estimativaAnual },
+          plr: {
+            ...d.plr,
+            totalPercentual: salvo.totalPercentual,
+            aviso: salvo.aviso,
+            estimativaAnual: salvo.estimativaAnual,
+            parcelas: d.plr.parcelas.map((p, i) => {
+              const calc = salvo.parcelas[i]
+              return calc ? { ...p, valorBruto: calc.valorBruto, desconto: calc.desconto, valorLiquido: calc.valorLiquido } : p
+            }),
+          },
         }))
       })
     },
