@@ -13,6 +13,7 @@ import br.com.gestafinanceira.domain.calculo.CargoVigente;
 import br.com.gestafinanceira.domain.calculo.FaixaProgressiva;
 import br.com.gestafinanceira.domain.calculo.Parametros;
 import br.com.gestafinanceira.domain.calculo.ParametrosMes;
+import br.com.gestafinanceira.infra.persistencia.Entidades;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Cargo;
 import br.com.gestafinanceira.infra.persistencia.Entidades.CargoValor;
 import br.com.gestafinanceira.infra.persistencia.Entidades.DeltaSalarial;
@@ -25,6 +26,7 @@ import br.com.gestafinanceira.infra.persistencia.CargoValorRepo;
 import br.com.gestafinanceira.infra.persistencia.DeltaRepo;
 import br.com.gestafinanceira.infra.persistencia.InssRepo;
 import br.com.gestafinanceira.infra.persistencia.IrpfRepo;
+import br.com.gestafinanceira.infra.persistencia.PlrRepo;
 import br.com.gestafinanceira.infra.persistencia.PerfilRepo;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,11 +53,13 @@ public class ParametrosService {
     private final DeltaRepo deltas;
     private final InssRepo inss;
     private final IrpfRepo irpf;
+    private final PlrRepo plrFaixas;
     private final BeneficioRepo beneficios;
     private final PerfilRepo perfil;
 
     public ParametrosService(CargoRepo cargos, CargoValorRepo cargoValores, DeltaRepo deltas, InssRepo inss,
-                             IrpfRepo irpf, BeneficioRepo beneficios, PerfilRepo perfil) {
+                             IrpfRepo irpf, PlrRepo plrFaixas, BeneficioRepo beneficios, PerfilRepo perfil) {
+        this.plrFaixas = plrFaixas;
         this.cargos = cargos;
         this.cargoValores = cargoValores;
         this.deltas = deltas;
@@ -84,7 +88,8 @@ public class ParametrosService {
                 b.irLimiteReducao, b.irReducaoA, b.irReducaoB, b.divisorJornada6h, b.divisorJornada8h,
                 b.bonusCaixaMaxSalarios,
                 fi.stream().map(f -> new FaixaProgressiva(f.ate, f.aliquota, f.deducao)).toList(),
-                fr.stream().map(f -> new FaixaProgressiva(f.ate, f.aliquota, f.deducao)).toList());
+                fr.stream().map(f -> new FaixaProgressiva(f.ate, f.aliquota, f.deducao)).toList(),
+                faixasPlr(data));
 
         Cargo c = cargos.findById(cargoId).orElseThrow(() -> new NaoEncontrado("Cargo " + cargoId + " não encontrado."));
         CargoValor v = cargoValores.vigente(cargoId, data).or(() -> cargoValores.maisAntigo(cargoId))
@@ -97,6 +102,14 @@ public class ParametrosService {
         BigDecimal valorDelta = delta.map(d -> d.valor).orElse(BigDecimal.ZERO);
         return new ParametrosMes(p, new CargoVigente(c.nome, c.jornada, c.usaDelta, v.piso, v.gratificacao,
                 v.plrAnual != null ? v.plrAnual : BigDecimal.ZERO), valorDelta);
+    }
+
+    /** Tabela de IR exclusivo do PLR vigente na data (a mais antiga se todas começam depois; vazia se não há). */
+    @Transactional(readOnly = true)
+    public List<FaixaProgressiva> faixasPlr(LocalDate data) {
+        List<Entidades.PlrFaixa> f = plrFaixas.vigentes(data);
+        if (f.isEmpty()) f = plrFaixas.maisAntigas();
+        return f.stream().map(x -> new FaixaProgressiva(x.ate, x.aliquota, x.deducao)).toList();
     }
 
     @Transactional(readOnly = true)

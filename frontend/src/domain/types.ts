@@ -51,8 +51,19 @@ export interface Bonus {
   salarios: number
 }
 
+/** Parcela de PLR devolvida pelo back end. `valor` é o bruto digitado (null = usar o calculado). */
+export interface ParcelaPlr {
+  mes: number
+  percentual: number
+  valor: number | null
+  valorBruto: number
+  desconto: number
+  valorLiquido: number
+}
+
 export interface Plr {
-  parcelas: ParcelaDecimo[]
+  ativo: boolean
+  parcelas: ParcelaPlr[]
   totalPercentual: number
   aviso: string | null
   estimativaAnual: number

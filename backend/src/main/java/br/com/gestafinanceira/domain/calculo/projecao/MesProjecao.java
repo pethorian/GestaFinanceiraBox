@@ -4,7 +4,11 @@ import br.com.gestafinanceira.domain.calculo.irpf.DetalheIrpf;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 
-/** Resultado de um mês da projeção. Descontos são valores positivos; líquido = receitas − descontos. */
+/**
+ * Resultado de um mês da projeção. Descontos são valores positivos; líquido = receitas − descontos.
+ * {@code plr} é o valor LÍQUIDO do PLR do mês (já entra em receitas); {@code plrBruto} e {@code plrDesconto}
+ * (IR exclusivo na fonte) são informativos.
+ */
 public record MesProjecao(
         int indice,
         YearMonth competencia,
@@ -32,11 +36,13 @@ public record MesProjecao(
         BigDecimal acumulado,
         String evento,
         BigDecimal baseInss,
-        boolean tetoInssAplicado) {
+        boolean tetoInssAplicado,
+        BigDecimal plrBruto,
+        BigDecimal plrDesconto) {
 
     public MesProjecao comAcumulado(BigDecimal valor) {
         return new MesProjecao(indice, competencia, base, sobreaviso, creche, homeOffice, vrVa, decimo, ferias, plr, bonus,
                 inss, irpf, funcef, saude, valeTransporte, sindicato, descontoDecimo, receitas, descontos,
-                liquido, gastos, sobra, valor, evento, baseInss, tetoInssAplicado);
+                liquido, gastos, sobra, valor, evento, baseInss, tetoInssAplicado, plrBruto, plrDesconto);
     }
 }

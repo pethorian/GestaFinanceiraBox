@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { fmt, fmtAliquota, tituloCompetencia } from '../domain/format'
 import type { MesProjecao } from '../domain/types'
+import { AvisoPlr } from './AvisoPlr'
 import { Icon } from './Icon'
 import { cls } from './ui'
 
@@ -28,6 +29,7 @@ export function MemoriaCalculo({ mes, onClose }: { mes: MesProjecao | null; onCl
           <button className="btn x" style={{ float: 'right' }} onClick={onClose} aria-label="Fechar"><Icon name="close" size={16} /></button>
           <h2 style={{ fontSize: 18, margin: 0 }}>{tituloCompetencia(m.competencia)}</h2>
           <small style={{ color: 'var(--mut)' }}>Memória de cálculo {m.evento && <span className="tag o">{m.evento}</span>}</small>
+          {m.plr > 0 && <AvisoPlr />}
 
           <div className="memo"><h4>Receitas</h4>
             <L a="Remuneração base" b={fmt(m.base)} />

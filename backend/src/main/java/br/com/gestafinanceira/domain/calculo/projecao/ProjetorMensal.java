@@ -11,6 +11,7 @@ import br.com.gestafinanceira.domain.calculo.descontos.SaudeCaixa;
 import br.com.gestafinanceira.domain.calculo.descontos.Sindicato;
 import br.com.gestafinanceira.domain.calculo.descontos.ValeTransporte;
 import br.com.gestafinanceira.domain.calculo.inss.CalculadoraInss;
+import br.com.gestafinanceira.domain.calculo.plr.CalculadoraPlr;
 import br.com.gestafinanceira.domain.calculo.irpf.CalculadoraIrpf;
 import br.com.gestafinanceira.domain.calculo.irpf.DetalheIrpf;
 import br.com.gestafinanceira.domain.calculo.remuneracao.Beneficios;
@@ -60,6 +61,8 @@ public final class ProjetorMensal {
         BigDecimal descontoDecimo = Dinheiro.ZERO;
         BigDecimal ferias = Dinheiro.ZERO;
         BigDecimal plr = Dinheiro.ZERO;
+        BigDecimal plrBruto = Dinheiro.ZERO;
+        BigDecimal plrDesconto = Dinheiro.ZERO;
         BigDecimal bonus = Dinheiro.ZERO;
         if (!semEventos) {
             List<ParcelaDecimo> parcelas = dados.decimo();
@@ -75,11 +78,15 @@ public final class ProjetorMensal {
             if (perfil.ferias().ativo() && perfil.ferias().mes() == mes.getMonthValue()) {
                 ferias = CalculadoraFerias.valor(base, perfil.ferias().abono(), p);
             }
-            // PLR e Bônus Caixa entram como valores líquidos (sem INSS/IRPF adicionais).
-            Optional<ParcelaDecimo> parcelaPlr = dados.plr().stream()
-                    .filter(e -> e.mes() == mes.getMonthValue()).findFirst();
-            if (parcelaPlr.isPresent()) {
-                plr = Dinheiro.percentual(pm.cargo().plrAnual(), parcelaPlr.get().percentual());
+            // PLR: sem INSS; IR exclusivo na fonte recai sobre a parcela de saldo (ver CalculadoraPlr).
+            // O líquido entra em receitas. O Bônus Caixa segue como valor líquido (sem INSS/IRPF adicionais).
+            if (dados.plr().stream().anyMatch(e -> e.mes() == mes.getMonthValue())) {
+                CalculadoraPlr.ParcelaCalculada pc = CalculadoraPlr
+                        .calcular(dados.plr(), pm.cargo().plrAnual(), p.faixasPlr()).stream()
+                        .filter(e -> e.mes() == mes.getMonthValue()).findFirst().orElseThrow();
+                plr = pc.liquido();
+                plrBruto = pc.bruto();
+                plrDesconto = pc.desconto();
             }
             Bonus b = perfil.bonus();
             if (b.ativo() && pm.cargo().jornada() == 8 && b.mes() == mes.getMonthValue()) {
@@ -113,6 +120,6 @@ public final class ProjetorMensal {
                 inss, irpf, funcef, saude, vt, sindicato, descontoDecimo,
                 Dinheiro.arredondar(receitas), Dinheiro.arredondar(descontos), Dinheiro.arredondar(liquido),
                 Dinheiro.arredondar(gastos), Dinheiro.arredondar(sobra), Dinheiro.ZERO, evento,
-                bruta, bruta.compareTo(p.inssTetoSalario()) > 0);
+                bruta, bruta.compareTo(p.inssTetoSalario()) > 0, plrBruto, plrDesconto);
     }
 }

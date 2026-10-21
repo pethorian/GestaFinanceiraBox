@@ -1,7 +1,7 @@
 import { rotuloCompetencia } from '../domain/format'
 import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
-  ParcelaDecimo, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
+  ParcelaDecimo, ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
 } from '../domain/types'
 import { http } from './http'
 
@@ -35,7 +35,12 @@ export const api = {
   bonus: () => http.get<Bonus>('/api/bonus'),
   salvarBonus: (b: Bonus) => http.put<Bonus>('/api/bonus', b),
   plr: () => http.get<Plr>('/api/plr'),
-  salvarPlr: (parcelas: ParcelaDecimo[]) => http.put<Plr>('/api/plr', { parcelas }),
+  /** envia só o que o usuário edita; o back end devolve os valores calculados (bruto, desconto, líquido) */
+  salvarPlr: (plr: { ativo: boolean; parcelas: ParcelaPlr[] }) =>
+    http.put<Plr>('/api/plr', {
+      ativo: plr.ativo,
+      parcelas: plr.parcelas.map(({ mes, percentual, valor }) => ({ mes, percentual, valor })),
+    }),
   novaParcelaPlr: () => http.post<Plr>('/api/plr/parcelas'),
 
   /** nova linha com os valores padrão definidos pelo servidor */

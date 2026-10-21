@@ -39,13 +39,13 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 | Perfil | `GET/PUT /api/perfil` |
 | Férias | `GET/PUT /api/ferias` |
 | 13º | `GET/PUT /api/decimo` (lista de `{mes, percentual}`; soma ≤ 100), `POST /api/decimo/parcelas` (acrescenta o que falta para 100%) |
-| PLR | `GET/PUT /api/plr` (`{parcelas:[{mes, percentual}], totalPercentual, aviso, estimativaAnual}`; soma ≤ 100, meses únicos), `POST /api/plr/parcelas` (acrescenta o que falta para 100%) |
+| PLR | `GET/PUT /api/plr` (`{ativo, parcelas:[{mes, percentual, valor, valorBruto, desconto, valorLiquido}], totalPercentual, aviso, estimativaAnual}`; no PUT valem `ativo` (omitido mantém), `mes`, `percentual` e `valor` (bruto opcional); soma dos % ≤ 100, meses únicos; ativar sem parcelas grava as padrão set 50% + mar 50%), `POST /api/plr/parcelas` (acrescenta o que falta para 100%) |
 | Bônus Caixa | `GET/PUT /api/bonus` (`{ativo, mes 1..12, salarios}`; só cargos de 8h, `salarios` ≤ máximo vigente) |
 | Gastos | `GET/POST /api/lancamentos`, `POST /api/lancamentos/novo` (linha padrão), `GET /api/lancamentos/resumo` (média por categoria), `GET/PUT/DELETE /api/lancamentos/{id}` |
 | Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` |
 | Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}` |
 | Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM` |
-| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR vazio e bônus inativo; não toca nos parâmetros) |
+| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR inativo (parcelas set/mar 50%) e bônus inativo; não toca nos parâmetros) |
 | Vigentes | `GET /api/parametros/vigentes?data=` (cargos, deltas, INSS, IRPF e benefícios vigentes) |
 | Cargos | `GET /api/parametros/cargos?data=`, `POST`, `GET/PUT/DELETE /api/parametros/cargos/{id}` |
 | Deltas | `GET/PUT /api/parametros/deltas`, `DELETE /api/parametros/deltas/{inicio}` |
@@ -73,10 +73,10 @@ Regras do simulador reproduzidas pelo motor:
 - INSS e sindicato incidem sobre o **bruto** (base + sobreaviso). VR/VA, creche, home office, parcelas do 13º, PLR e bônus **não** entram na base do INSS.
 - VT = `vt_percentual` (4%) × **valor do delta escolhido no perfil** (a coluna `vt_referencia` foi removida).
 - FUNCEF: `funcefPct` deve ser 0 (não participa) ou estar entre 5 e 12 (senão 422).
-- **PLR** (`evento_salarial`, tipo `PLR`): valor da parcela = PLR anual do cargo × percentual; **tratado como líquido** (sem INSS/IRPF adicionais). Padrão: nenhuma parcela.
+- **PLR** (`evento_salarial`, tipo `PLR`; flag `perfil.plr_ativo`, padrão **inativo** = nada entra na projeção). Parcelas padrão: setembro 50% (antecipação) e março 50% (saldo); mês, percentual e `valor` são editáveis. Valor **bruto** da parcela = `valor` informado (se houver) ou PLR anual do cargo × percentual. Tributação (`domain/calculo/plr/CalculadoraPlr`, tabela `tabela_plr_faixa` com vigência, V5): **sem INSS**; IR em **tributação exclusiva na fonte** por tabela própria do PLR (2026: isento até 8.214,40; 7,5% − 616,08 até 9.922,28; 15% − 1.360,25 até 13.167,00; 22,5% − 2.347,78 até 16.380,38; 27,5% − 3.166,80 acima), aplicada sobre o **total do PLR do ciclo** (soma das parcelas), descontando o já retido antes (Lei 10.101/2000, art. 3º, com a redação da Lei 12.832/2013). Suposições: (1) a antecipação é paga sem retenção e a parcela de saldo (a de **menor mês**, paga no início do ano seguinte) carrega todo o IR do ciclo; (2) o redutor/isenção da Lei 15.270/2025 (renda até R$ 7.350) **não** se aplica ao PLR, que segue em tabela própria e exclusiva (fontes secundárias: Receita Federal/InfoMoney/guias contábeis de 2026; não foi possível abrir o texto oficial); (3) o IR do ciclo usa a estimativa e a tabela vigentes no mês do saldo; (4) a tributação mínima de altas rendas não é modelada. Se a empresa retiver IR já na antecipação, ajuste o `valor`/percentuais ou a tabela. O mês traz `plr` = **líquido** (entra em receitas), `plrBruto` e `plrDesconto`.
 - **Bônus Caixa** (colunas `bonus_*` do perfil): valor = base × salários, **tratado como líquido**, pago no mês configurado; só para cargos de 8h
   (`PUT /api/bonus` e troca de cargo recusam com 422 nos demais). Padrão: inativo.
-- Cada mês da projeção traz `plr` e `bonus` (0 quando não há); `evento` lista todos os eventos do mês unidos por " + " (ex.: "13º + PLR").
+- Cada mês da projeção traz `plr` (líquido), `plrBruto`, `plrDesconto` e `bonus` (0 quando não há); `evento` lista todos os eventos do mês unidos por " + " (ex.: "13º + PLR").
 - **Férias** (líquido, como na planilha): `terço = base/3`; `b2 = base + base/3`; `férias = terço − (INSS(b2) − INSS(base)) − (IRPF(b2) − IRPF(base))`, com IRPF de dedução fixa 607,20 (INSS e FUNCEF não deduzidos). O valor é a receita líquida do mês das férias (sem tributar de novo). Validado ao centavo nos 12 cargos. **Abono** (a planilha não modela): soma-se ao líquido mais base/3, isento — premissa do protótipo, a confirmar.
 - **13º**: as parcelas são pagas brutas (percentual × base). Na **última parcela do ano** desconta-se `INSS(total) + IR(total) + FUNCEF (pct × total) + Saúde Caixa sobre o total`, com `total` = soma das parcelas × base. Sem FUNCEF o IR deduz o INSS; **com FUNCEF o IR usa a dedução fixa de 607,20 (INSS e FUNCEF não deduzidos), o que aumenta o IR — premissa replicada da planilha, a confirmar (suspeita).** A saúde não é arredondada na planilha (tolerância de 0,01 nos testes).
 
