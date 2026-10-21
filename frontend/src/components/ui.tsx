@@ -48,11 +48,11 @@ export function Switch({ checked, onChange, title, hint }: {
   )
 }
 
-export function Segmented<T extends string>({ name, value, options, onChange }: {
-  name: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void
+export function Segmented<T extends string>({ name, value, options, onChange, label }: {
+  name: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label?: string
 }) {
   return (
-    <div className="seg" role="radiogroup">
+    <div className="seg" role="radiogroup" aria-label={label}>
       {options.map((o) => (
         <label key={o.value}>
           <input type="radio" name={name} value={o.value} checked={value === o.value} onChange={() => onChange(o.value)} />

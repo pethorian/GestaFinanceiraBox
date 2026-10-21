@@ -7,6 +7,7 @@ import { Metas } from './pages/Metas'
 import { Parametros } from './pages/Parametros'
 import { Perfil } from './pages/Perfil'
 import { Projecao } from './pages/Projecao'
+import { SaudeFinanceira } from './pages/SaudeFinanceira'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Projecao />} />
+            <Route path="saude" element={<SaudeFinanceira />} />
             <Route path="perfil" element={<Perfil />} />
             <Route path="gastos" element={<Gastos />} />
             <Route path="decimo" element={<Decimo />} />

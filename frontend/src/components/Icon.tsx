@@ -14,6 +14,11 @@ const PATHS = {
   bars: <path d="M4 19V9M10 19V5M16 19v-7M22 19H2" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  pulse: <path d="M3 12h4l2.5-6 5 12 2.5-6h4" />,
+  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8v.01" /></>,
+  piggy: <><path d="M5 11a7 6 0 0113-2l2 .5v4l-2 .5a7 6 0 01-3 3V19h-3v-1.2a8 8 0 01-2 0V19H7v-1.8A6 6 0 015 11z" /><path d="M9 9.5h3" /></>,
+  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
 } as const
 
 export type IconName = keyof typeof PATHS
