@@ -24,7 +24,7 @@ export function Gastos() {
           <h2>Seus gastos <small>{lancamentos.length === 1 ? '1 item' : `${lancamentos.length} itens`}</small></h2>
 
           {lancamentos.length === 0 ? (
-            <p className="empty">Nenhum gasto neste mês. Use “+ Novo gasto” para cadastrar.</p>
+            <p className="empty">Nenhum gasto nos próximos meses. Use “+ Novo gasto” para cadastrar.</p>
           ) : (
             <>
               <div className="grow ghead" aria-hidden="true">
@@ -67,9 +67,11 @@ export function Gastos() {
           {cats.length === 0 && <p className="empty">Sem gastos cadastrados.</p>}
           {cats.map((c) => (
             <div className="cat-row" key={c.categoria}>
-              <span>{c.categoria}</span>
+              <div className="cat-head">
+                <span>{c.categoria}</span>
+                <span className="num">{fmt(c.mediaMensal)}</span>
+              </div>
               <div className="pbar"><i style={{ width: `${(c.mediaMensal / maxCat) * 100}%` }} /></div>
-              <span className="num" style={{ textAlign: 'right' }}>{fmt(c.mediaMensal)}</span>
             </div>
           ))}
         </Card>

@@ -120,7 +120,10 @@ th{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em
 td{padding:6px;border-top:1px solid var(--line)}
 td input,td select{padding:7px 10px}
 .scrollx{overflow:auto}
-.cat-row{display:grid;grid-template-columns:96px 1fr 84px;gap:10px;align-items:center;margin:10px 0}
+.cat-row{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.cat-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.cat-head span:last-child{text-align:right;white-space:nowrap}
+.cat-row .pbar{width:100%;min-width:120px}
 .pbar{height:8px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
 .pbar i{display:block;height:100%;background:var(--grad);border-radius:5px}
 .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
