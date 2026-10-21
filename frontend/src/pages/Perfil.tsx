@@ -67,7 +67,7 @@ export function Perfil() {
             <div className="row2">
               <Field label="Jornada"><input type="text" value={cargo ? `${cargo.jornada} horas` : ''} disabled /></Field>
               <Field label="Dias de sobreaviso por mês" hint="Calculado sobre a base, com divisor da jornada">
-                <NumberInput min={0} max={31} value={p.diasSobreaviso} onChange={(v) => editarPerfil({ diasSobreaviso: v })} />
+                <NumberInput stepper min={0} max={31} value={p.diasSobreaviso} onChange={(v) => editarPerfil({ diasSobreaviso: v })} />
               </Field>
             </div>
           </Card>
@@ -75,7 +75,7 @@ export function Perfil() {
           <Card>
             <h2>Benefícios</h2>
             <Field label="Filhos com auxílio creche (PAI)">
-              <NumberInput min={0} max={10} value={p.filhos} onChange={(v) => editarPerfil({ filhos: v })} />
+              <NumberInput stepper min={0} max={10} value={p.filhos} onChange={(v) => editarPerfil({ filhos: v })} />
             </Field>
             <Switch title="Auxílio home office" hint="Valor fixo mensal" checked={p.homeOffice} onChange={(v) => editarPerfil({ homeOffice: v })} />
             <Switch title="Vale-refeição + cesta-alimentação" hint="Considerar VR e VA na receita" checked={p.vrVa} onChange={(v) => editarPerfil({ vrVa: v })} />
@@ -95,7 +95,7 @@ export function Perfil() {
               </div>
               {p.saude === 'DEP' && (
                 <Field label="Quantidade de dependentes" hint={`Limitado a ${fmtPct(parametros.beneficios.saudeTetoPercentual * 100)} da base`}>
-                  <NumberInput min={1} max={10} value={p.dependentes} onChange={(v) => editarPerfil({ dependentes: v })} />
+                  <NumberInput stepper min={1} max={10} value={p.dependentes} onChange={(v) => editarPerfil({ dependentes: v })} />
                 </Field>
               )}
             </div>

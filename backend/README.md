@@ -41,8 +41,8 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 | 13º | `GET/PUT /api/decimo` (lista de `{mes, percentual}`; soma ≤ 100), `POST /api/decimo/parcelas` (acrescenta o que falta para 100%) |
 | PLR | `GET/PUT /api/plr` (`{ativo, parcelas:[{mes, percentual, valor, valorBruto, desconto, valorLiquido}], totalPercentual, aviso, estimativaAnual}`; no PUT valem `ativo` (omitido mantém), `mes`, `percentual` e `valor` (bruto opcional); soma dos % ≤ 100, meses únicos; ativar sem parcelas grava as padrão set 50% + mar 50%) |
 | Bônus Caixa | `GET/PUT /api/bonus` (`{ativo, mes 1..12, salarios}`; só cargos de 8h, `salarios` ≤ máximo vigente) |
-| Gastos | `GET/POST /api/lancamentos`, `POST /api/lancamentos/novo` (linha padrão), `GET /api/lancamentos/resumo` (média por categoria), `GET/PUT/DELETE /api/lancamentos/{id}` |
-| Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` |
+| Gastos | `GET/POST /api/lancamentos`, `POST /api/lancamentos/novo` (linha padrão), `GET /api/lancamentos/resumo` (média por categoria), `GET/PUT/DELETE /api/lancamentos/{id}` (o DELETE é lógico: soft delete, ver abaixo) |
+| Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` (`Reserva` não é categoria de gasto: a reserva fica em Metas; criar categoria ou gasto com esse nome retorna `422`) |
 | Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}` |
 | Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM` |
 | Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR inativo (parcelas set/mar 50%) e bônus inativo; mantém o `nome` do perfil; não toca nos parâmetros) |
@@ -55,6 +55,12 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 
 Tabelas com vigência: o `PUT` grava uma vigência inteira (identificada por `vigenciaInicio`) e o fim das
 vigências é recalculado. Para cada mês da projeção vale a vigência mais recente iniciada até o dia 1º do mês.
+
+## Gastos: exclusão lógica e expiração
+
+- **Soft delete.** `lancamento` tem `deletado_em` (timestamp) e `motivo_exclusao` (`USUARIO` ou `EXPIRADO`). `DELETE /api/lancamentos/{id}` e "restaurar padrão" só marcam essas colunas (motivo `USUARIO`); nenhuma linha é apagada. Listagem, resumo por categoria, projeção e `GET /api/dados` ignoram lançamentos com `deletado_em` preenchido, e um id excluído responde `404`.
+- **Expiração de gasto pontual.** Um gasto `PONTUAL` "ultrapassou" quando seu mês inicial é **anterior ao mês de hoje** (no próprio mês ele ainda aparece). Nesse caso recebe `deletado_em = agora` e motivo `EXPIRADO`. Recorrentes e parcelados nunca expiram. A varredura é preguiçosa e idempotente: roda (em transação) no início de listagem, busca, resumo, projeção e `/api/dados`, usando um `Clock` injetável (`ConfigWeb.clock()`; os testes o substituem por um relógio fixo). Não há scheduler.
+- **Categoria Reserva removida** (migração `V7`): os lançamentos que a usavam (ativos ou excluídos) foram realocados para `Outros`, sem perda de dados, e a categoria foi apagada.
 
 ## Fontes dos dados e premissas
 

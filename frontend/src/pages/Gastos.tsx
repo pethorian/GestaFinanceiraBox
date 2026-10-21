@@ -12,46 +12,53 @@ export function Gastos() {
 
   // A média por categoria é calculada pelo back end (GET /api/lancamentos/resumo).
   const cats = resumoGastos.categorias
+  const temParcelado = lancamentos.some((g) => g.tipo === 'PARCELADO')
   const maxCat = cats[0]?.mediaMensal || 1 // só escala visual das barras
 
   return (
-    <Page title="Gastos" subtitle="Cadastre o que você paga todo mês, uma vez só ou em parcelas.">
-      <div className="cols">
-        <Card className="scrollx">
-          <table className="tbl-gastos">
-            <thead><tr><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor (R$)</th><th>Mês</th><th>Parcelas</th><th /></tr></thead>
-            <tbody>
-              {lancamentos.map((g) => {
-                const id = g.id as number
-                return (
-                  <tr key={id}>
-                    <td><input type="text" value={g.descricao} aria-label="Descrição" onChange={(e) => editarLancamento(id, { descricao: e.target.value })} /></td>
-                    <td>
+    <Page
+      title="Gastos mensais"
+      subtitle="Gastos “todo mês” se repetem; os de uma vez só saem da lista sozinhos depois que o mês passa.">
+      <div className="cols gcols">
+        <Card className={`gcard${temParcelado ? '' : ' semparc'}`}>
+          <h2>Seus gastos <small>{lancamentos.length === 1 ? '1 item' : `${lancamentos.length} itens`}</small></h2>
+
+          {lancamentos.length === 0 ? (
+            <p className="empty">Nenhum gasto neste mês. Use “+ Novo gasto” para cadastrar.</p>
+          ) : (
+            <>
+              <div className="grow ghead" aria-hidden="true">
+                <span>Descrição</span><span>Categoria</span><span>Tipo</span><span>Mês</span>{temParcelado ? <span>Parcelas</span> : <span />}<span className="r">Valor</span><span />
+              </div>
+              <div className="glist">
+                {lancamentos.map((g) => {
+                  const id = g.id as number
+                  const parcelado = g.tipo === 'PARCELADO'
+                  return (
+                    <div className="grow" key={id}>
+                      <input type="text" className="desc" value={g.descricao} aria-label="Descrição" onChange={(e) => editarLancamento(id, { descricao: e.target.value })} />
                       <select value={g.categoria} aria-label="Categoria" onChange={(e) => editarLancamento(id, { categoria: e.target.value })}>
                         {categorias.map((c) => <option key={c.nome}>{c.nome}</option>)}
                       </select>
-                    </td>
-                    <td>
-                      <select value={g.tipo} aria-label="Tipo" onChange={(e) => {
-                        const tipo = e.target.value as TipoLancamento
-                        editarLancamento(id, { tipo })
-                      }}>
+                      <select value={g.tipo} aria-label="Tipo" onChange={(e) => editarLancamento(id, { tipo: e.target.value as TipoLancamento })}>
                         {Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
-                    </td>
-                    <td><NumberInput min={0} step={10} value={g.valor} style={{ width: 100 }} aria-label="Valor" onChange={(v) => editarLancamento(id, { valor: v })} /></td>
-                    <td><input type="month" value={g.mesInicial} aria-label="Mês inicial" onChange={(e) => e.target.value && editarLancamento(id, { mesInicial: e.target.value })} /></td>
-                    <td><NumberInput min={1} max={60} value={g.parcelas} style={{ width: 70 }} disabled={g.tipo !== 'PARCELADO'} aria-label="Parcelas" onChange={(v) => editarLancamento(id, { parcelas: v })} /></td>
-                    <td><button className="btn x" onClick={() => void removerLancamento(id)} aria-label={`Remover ${g.descricao}`}><Icon name="close" size={14} /></button></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          {lancamentos.length === 0 && <p className="empty">Nenhum gasto cadastrado ainda.</p>}
+                      <input type="month" value={g.mesInicial} aria-label="Mês inicial" onChange={(e) => e.target.value && editarLancamento(id, { mesInicial: e.target.value })} />
+                      {parcelado
+                        ? <NumberInput stepper min={1} max={60} value={g.parcelas} aria-label="Parcelas" onChange={(v) => editarLancamento(id, { parcelas: v })} />
+                        : <span />}
+                      <NumberInput prefix="R$" min={0} step={10} value={g.valor} aria-label="Valor" onChange={(v) => editarLancamento(id, { valor: v })} />
+                      <button className="btn x ghost" onClick={() => void removerLancamento(id)} aria-label={`Remover ${g.descricao}`} title="Remover"><Icon name="close" size={14} /></button>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+
           <div className="row-actions">
             <button className="btn pri" onClick={() => void adicionarLancamento()}>+ Novo gasto</button>
-            <span>Média mensal: <b className="num">{fmt(resumoGastos.mediaMensalTotal)}</b></span>
+            <span className="dim">Média mensal: <b className="num">{fmt(resumoGastos.mediaMensalTotal)}</b></span>
           </div>
         </Card>
 

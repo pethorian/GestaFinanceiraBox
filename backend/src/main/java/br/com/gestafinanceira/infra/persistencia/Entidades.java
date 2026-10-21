@@ -155,6 +155,10 @@ public final class Entidades {
         @Column(name = "mes_inicial") public LocalDate mesInicial;
         public int parcelas;
         @Column(name = "criado_em") public LocalDateTime criadoEm = LocalDateTime.now();
+        /** Soft delete: não nulo = excluído (fica no banco, mas some de leituras e cálculos). */
+        @Column(name = "deletado_em") public LocalDateTime deletadoEm;
+        /** 'USUARIO' ou 'EXPIRADO'. */
+        @Column(name = "motivo_exclusao") public String motivoExclusao;
     }
 
     @Entity(name = "EventoSalarial")

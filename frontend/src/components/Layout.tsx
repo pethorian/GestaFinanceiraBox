@@ -7,7 +7,7 @@ interface Rota { to: string; label: string; icon: IconName }
 export const ROTAS: Rota[] = [
   { to: '/', label: 'Projeção', icon: 'chart' },
   { to: '/perfil', label: 'Meu perfil', icon: 'user' },
-  { to: '/gastos', label: 'Gastos', icon: 'receipt' },
+  { to: '/gastos', label: 'Gastos mensais', icon: 'receipt' },
   { to: '/decimo', label: '13º, férias e PLR', icon: 'gift' },
   { to: '/metas', label: 'Metas e reserva', icon: 'target' },
   { to: '/parametros', label: 'Parâmetros', icon: 'cog' },

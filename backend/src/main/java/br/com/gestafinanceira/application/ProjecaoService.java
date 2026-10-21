@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Monta os dados persistidos e chama o motor de cálculo. A projeção nunca é persistida. */
 @Service
-@Transactional(readOnly = true)
+@Transactional
 public class ProjecaoService {
     private final PerfilService perfil;
     private final LancamentoService lancamentos;

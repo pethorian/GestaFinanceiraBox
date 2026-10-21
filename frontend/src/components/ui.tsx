@@ -63,9 +63,39 @@ export function Segmented<T extends string>({ name, value, options, onChange }: 
   )
 }
 
-/** Input numérico que devolve number (vazio vira 0). */
-export function NumberInput({ value, onChange, ...rest }: {
-  value: number; onChange: (v: number) => void
+/**
+ * Input numérico que devolve number (vazio vira 0). Os spinners nativos ficam escondidos (CSS global);
+ * `stepper` mostra botões − / + no padrão visual do app (↑/↓ do teclado continuam funcionando) e
+ * `prefix` mostra um prefixo fixo (ex.: "R$"). Sem nenhum dos dois, renderiza só o <input>.
+ */
+export function NumberInput({ value, onChange, stepper, prefix, style, ...rest }: {
+  value: number; onChange: (v: number) => void; stepper?: boolean; prefix?: string
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>) {
-  return <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} {...rest} />
+  const envolto = !!prefix || !!stepper
+  const input = (
+    <input type="number" value={value} style={envolto ? undefined : style}
+      onChange={(e) => onChange(Number(e.target.value) || 0)} {...rest} />
+  )
+  if (!envolto) return input
+
+  const step = Number(rest.step) || 1
+  const min = rest.min !== undefined ? Number(rest.min) : -Infinity
+  const max = rest.max !== undefined ? Number(rest.max) : Infinity
+  const mudar = (dir: 1 | -1) => {
+    const novo = Math.round((value + dir * step) * 100) / 100
+    onChange(Math.min(max, Math.max(min, novo)))
+  }
+  const label = rest['aria-label']
+  return (
+    <span className={`nin${rest.disabled ? ' off' : ''}`} style={style}>
+      {prefix && <em>{prefix}</em>}
+      {input}
+      {stepper && (
+        <span className="stp">
+          <button type="button" tabIndex={-1} disabled={rest.disabled || value <= min} aria-label={label ? `Diminuir ${label}` : 'Diminuir'} onClick={() => mudar(-1)}>−</button>
+          <button type="button" tabIndex={-1} disabled={rest.disabled || value >= max} aria-label={label ? `Aumentar ${label}` : 'Aumentar'} onClick={() => mudar(1)}>+</button>
+        </span>
+      )}
+    </span>
+  )
 }
