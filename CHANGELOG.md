@@ -5,6 +5,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Não lançado]
 
 ### Adicionado
+- Plano de uso do 13º e do PLR: o usuário divide cada adicional entre lazer, gastos obrigatórios e reservas (opcionalmente ligadas a uma meta); a projeção mostra a divisão no mês em que a parcela cai e a Saúde financeira compara o plano com o 50/30/20.
+- FUNCEF como reserva: a contribuição conta como poupança na Saúde financeira; saldo atual da FUNCEF no Perfil e previdência e patrimônio total na projeção.
 - Aba "Saúde financeira" com o método 50/30/20 opcional: compara necessidades, desejos e poupança com a renda líquida, classifica cada categoria como obrigatória ou lazer, sugere quanto guardar em Metas e reserva e mostra gráficos.
 - Metas e reservas: o aporte mensal sai do saldo disponível de cada mês até a meta atingir o alvo; a projeção mostra o valor guardado em metas e o patrimônio (disponível + guardado).
 - Banco onde o dinheiro de cada meta está guardado (texto livre).
