@@ -14,6 +14,8 @@ import br.com.gestafinanceira.infra.persistencia.Entidades.Lancamento;
 import br.com.gestafinanceira.infra.persistencia.CategoriaRepo;
 import br.com.gestafinanceira.infra.persistencia.LancamentoRepo;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.math.RoundingMode;
 import java.util.Comparator;
@@ -31,19 +33,30 @@ public class LancamentoService {
 
     private final LancamentoRepo lancamentos;
     private final CategoriaRepo categorias;
+    private final Clock clock;
 
-    public LancamentoService(LancamentoRepo lancamentos, CategoriaRepo categorias) {
+    public LancamentoService(LancamentoRepo lancamentos, CategoriaRepo categorias, Clock clock) {
         this.lancamentos = lancamentos;
         this.categorias = categorias;
+        this.clock = clock;
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Expiração preguiçosa e idempotente: todo gasto PONTUAL cujo mês inicial é anterior ao mês de hoje
+     * ("ultrapassou") recebe soft delete com motivo EXPIRADO. No próprio mês o gasto ainda aparece.
+     * Recorrentes e parcelados nunca são tocados. Chamada no início de toda leitura/cálculo.
+     */
+    public int expirarPontuaisVencidos() {
+        return lancamentos.expirarPontuaisAnteriores(YearMonth.now(clock).atDay(1), LocalDateTime.now(clock));
+    }
+
     public List<LancamentoDto> listar() {
-        return lancamentos.findAllByOrderByIdAsc().stream().map(LancamentoService::paraDto).toList();
+        expirarPontuaisVencidos();
+        return lancamentos.findAllByDeletadoEmIsNullOrderByIdAsc().stream().map(LancamentoService::paraDto).toList();
     }
 
-    @Transactional(readOnly = true)
     public LancamentoDto buscar(Long id) {
+        expirarPontuaisVencidos();
         return paraDto(entidade(id));
     }
 
@@ -59,8 +72,13 @@ public class LancamentoService {
         return paraDto(lancamentos.save(l));
     }
 
+    /** Exclusão lógica (motivo USUARIO): a linha continua no banco. */
     public void remover(Long id) {
-        lancamentos.delete(entidade(id));
+        expirarPontuaisVencidos();
+        Lancamento l = entidade(id);
+        l.deletadoEm = LocalDateTime.now(clock);
+        l.motivoExclusao = "USUARIO";
+        lancamentos.save(l);
     }
 
     /** Nova linha de gasto com os valores padrão definidos pelo servidor (mês atual, primeira categoria). */
@@ -68,24 +86,24 @@ public class LancamentoService {
         String categoria = categorias.findAllByOrderByOrdemAscNomeAsc().stream().findFirst()
                 .map(c -> c.nome).orElse("Outros");
         return criar(new LancamentoDto(null, "Novo gasto", categoria, TipoLancamento.RECORRENTE,
-                BigDecimal.ZERO, YearMonth.now(), 0));
+                BigDecimal.ZERO, YearMonth.now(clock), 0));
     }
 
-    @Transactional(readOnly = true)
     public List<GastoCalculo> paraCalculo() {
-        return lancamentos.findAllByOrderByIdAsc().stream()
+        expirarPontuaisVencidos();
+        return lancamentos.findAllByDeletadoEmIsNullOrderByIdAsc().stream()
                 .map(l -> new GastoCalculo(l.tipo, l.valor, YearMonth.from(l.mesInicial), l.parcelas))
                 .toList();
     }
 
     public void removerTodos() {
-        lancamentos.deleteAllInBatch();
+        lancamentos.excluirTodosAtivos(LocalDateTime.now(clock), "USUARIO");
     }
 
     /** Lançamentos padrão, com início relativo ao mês atual (equivale a dadosIniciais() do frontend). */
     public void restaurarPadrao() {
         removerTodos();
-        YearMonth m = YearMonth.now();
+        YearMonth m = YearMonth.now(clock);
         criarPadrao("Aluguel", "Moradia", TipoLancamento.RECORRENTE, 2200, m, 0);
         criarPadrao("Condomínio e contas", "Casa", TipoLancamento.RECORRENTE, 850, m, 0);
         criarPadrao("Telefone e internet", "Telefone", TipoLancamento.RECORRENTE, 190, m, 0);
@@ -100,11 +118,11 @@ public class LancamentoService {
     }
 
     /** Média mensal por categoria nos 12 meses a partir de inicio (padrão: mês atual). */
-    @Transactional(readOnly = true)
     public ResumoGastosDto resumoPorCategoria(YearMonth inicio) {
-        YearMonth ini = inicio != null ? inicio : YearMonth.now();
+        expirarPontuaisVencidos();
+        YearMonth ini = inicio != null ? inicio : YearMonth.now(clock);
         Map<String, BigDecimal> totais = new LinkedHashMap<>();
-        for (Lancamento l : lancamentos.findAllByOrderByIdAsc()) {
+        for (Lancamento l : lancamentos.findAllByDeletadoEmIsNullOrderByIdAsc()) {
             GastoCalculo g = new GastoCalculo(l.tipo, l.valor, YearMonth.from(l.mesInicial), l.parcelas);
             BigDecimal soma = BigDecimal.ZERO;
             for (int i = 0; i < 12; i++) soma = soma.add(g.valorEm(ini.plusMonths(i)));
@@ -129,6 +147,7 @@ public class LancamentoService {
 
     public CategoriaDto criarCategoria(CategoriaDto d) {
         String nome = d.nome().trim();
+        recusarCategoriaReservada(nome);
         if (categorias.existsById(nome)) throw new RegraDeNegocio("A categoria '" + nome + "' já existe.");
         Categoria c = new Categoria();
         c.nome = nome;
@@ -139,7 +158,7 @@ public class LancamentoService {
 
     public void removerCategoria(String nome) {
         if (!categorias.existsById(nome)) throw new NaoEncontrado("Categoria '" + nome + "' não encontrada.");
-        if (lancamentos.countByCategoria(nome) > 0) {
+        if (lancamentos.countByCategoriaAndDeletadoEmIsNull(nome) > 0) {
             throw new RegraDeNegocio("Há lançamentos usando a categoria '" + nome + "'.");
         }
         categorias.deleteById(nome);
@@ -147,12 +166,20 @@ public class LancamentoService {
 
     // ---- internos -----------------------------------------------------------------------------
 
+    /** A reserva tem aba própria (Metas); não existe mais como categoria de gasto. */
+    private static void recusarCategoriaReservada(String nome) {
+        if ("Reserva".equalsIgnoreCase(nome)) {
+            throw new RegraDeNegocio("'Reserva' não é categoria de gasto: use a aba Metas.");
+        }
+    }
+
     private Lancamento entidade(Long id) {
-        return lancamentos.findById(id).orElseThrow(() -> new NaoEncontrado("Lançamento " + id + " não encontrado."));
+        return lancamentos.findByIdAndDeletadoEmIsNull(id).orElseThrow(() -> new NaoEncontrado("Lançamento " + id + " não encontrado."));
     }
 
     private void aplicar(Lancamento l, LancamentoDto d) {
         String cat = d.categoria().trim();
+        recusarCategoriaReservada(cat);
         if (!categorias.existsById(cat)) {
             Categoria c = new Categoria();
             c.nome = cat;

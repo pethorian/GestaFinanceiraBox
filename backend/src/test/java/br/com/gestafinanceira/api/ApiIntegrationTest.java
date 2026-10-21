@@ -159,7 +159,7 @@ class ApiIntegrationTest {
 
     @Test
     void categoriasListamECrudBasico() throws Exception {
-        mvc.perform(get("/api/categorias")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(10)));
+        mvc.perform(get("/api/categorias")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(9)));
         json(post("/api/categorias"), "{\"nome\": \"Educação\", \"ordem\": 0}").andExpect(status().isCreated());
         json(post("/api/categorias"), "{\"nome\": \"Educação\", \"ordem\": 0}").andExpect(status().isUnprocessableEntity());
         mvc.perform(delete("/api/categorias/Educação")).andExpect(status().isNoContent());
@@ -343,7 +343,7 @@ class ApiIntegrationTest {
         mvc.perform(post("/api/dados/restaurar")).andExpect(status().isOk());
         mvc.perform(get("/api/plr")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.ativo", is(false)))
-                .andExpect(jsonPath("$.parcelas", hasSize(2))).andExpect(jsonPath("$.totalPercentual", is(100)))
+                .andExpect(jsonPath("$.parcelas", hasSize(2))).andExpect(jsonPath("$.totalPercentual", is(100.0)))
                 .andExpect(jsonPath("$.parcelas[0].mes", is(3)))
                 .andExpect(jsonPath("$.parcelas[1].mes", is(9)))
                 .andExpect(jsonPath("$.parcelas[1].valor").value(org.hamcrest.Matchers.nullValue()))

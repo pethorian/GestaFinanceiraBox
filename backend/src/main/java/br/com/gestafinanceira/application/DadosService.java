@@ -23,7 +23,6 @@ public class DadosService {
         this.metas = metas;
     }
 
-    @Transactional(readOnly = true)
     public DadosDto buscar() {
         return new DadosDto(perfil.buscar(), perfil.buscarFerias(), lancamentos.listar(), decimo.buscar(), metas.listar(),
                 perfil.buscarBonus(), plr.buscar());
