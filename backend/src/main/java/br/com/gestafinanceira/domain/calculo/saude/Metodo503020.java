@@ -30,15 +30,34 @@ public final class Metodo503020 {
      * @param atual valores atuais (necessidades, desejos, poupança)
      * @param percentuais % da renda com 1 casa; {@code null} se a renda é ≤ 0
      * @param diferenca atual − recomendado por faixa
+     * @param poupancaDetalhe composição de {@code atual.poupanca}: aportes em metas + contribuição FUNCEF
      */
     public record Resultado(
             BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
             Faixas<BigDecimal> percentuais, Faixas<BigDecimal> diferenca, Faixas<StatusFaixa> status,
-            BigDecimal sobraLivre, BigDecimal aporteSugerido, List<String> diagnostico) {
+            BigDecimal sobraLivre, BigDecimal aporteSugerido, List<String> diagnostico,
+            Detalhe poupancaDetalhe) {
+    }
+
+    /** Poupança = metas + FUNCEF (a contribuição do participante é dinheiro guardado). */
+    public record Detalhe(BigDecimal metas, BigDecimal funcef) {
     }
 
     public static Resultado calcular(BigDecimal renda, BigDecimal necessidades, BigDecimal desejos,
                                      BigDecimal poupanca) {
+        return calcular(renda, necessidades, desejos, poupanca, BigDecimal.ZERO);
+    }
+
+    /**
+     * @param poupancaMetas média mensal dos aportes em metas
+     * @param funcef contribuição mensal do participante à FUNCEF: soma-se à poupança (a renda recebida já deve
+     *               incluí-la; a contrapartida da patrocinadora fica de fora, pois não é renda do usuário)
+     */
+    public static Resultado calcular(BigDecimal renda, BigDecimal necessidades, BigDecimal desejos,
+                                     BigDecimal poupancaMetas, BigDecimal funcef) {
+        BigDecimal fun = Dinheiro.arredondar(funcef);
+        BigDecimal metas = Dinheiro.arredondar(poupancaMetas);
+        BigDecimal poupanca = metas.add(fun);
         BigDecimal r = Dinheiro.arredondar(renda);
         boolean temRenda = r.signum() > 0;
         Faixas<BigDecimal> atual = new Faixas<>(Dinheiro.arredondar(necessidades), Dinheiro.arredondar(desejos),
@@ -60,7 +79,7 @@ public final class Metodo503020 {
         BigDecimal aporte = temRenda ? Dinheiro.max(Dinheiro.ZERO, rec.poupanca().subtract(atual.poupanca()))
                 : Dinheiro.ZERO;
         return new Resultado(r, rec, atual, pct, dif, status, sobra, aporte,
-                diagnostico(temRenda, atual, pct, status, sobra, aporte));
+                diagnostico(temRenda, atual, pct, status, sobra, aporte, fun), new Detalhe(metas, fun));
     }
 
     private static BigDecimal pct(BigDecimal valor, BigDecimal renda) {
@@ -68,7 +87,8 @@ public final class Metodo503020 {
     }
 
     private static List<String> diagnostico(boolean temRenda, Faixas<BigDecimal> atual, Faixas<BigDecimal> pct,
-                                            Faixas<StatusFaixa> status, BigDecimal sobra, BigDecimal aporte) {
+                                            Faixas<StatusFaixa> status, BigDecimal sobra, BigDecimal aporte,
+                                            BigDecimal funcef) {
         List<String> d = new ArrayList<>();
         if (!temRenda) {
             d.add("Não há renda mensal de referência para calcular o método 50/30/20; confira seu perfil.");
@@ -84,6 +104,9 @@ public final class Metodo503020 {
                 ? "Você guarda " + p(pct.poupanca()) + " da renda; para chegar a 20%, aporte mais R$ " + m(aporte)
                         + " por mês em uma reserva (aba Metas e reserva)."
                 : "Você guarda " + p(pct.poupanca()) + " da renda, dentro da meta de pelo menos 20%.");
+        if (funcef.signum() > 0) {
+            d.add("Sua contribuição FUNCEF já conta como poupança: R$ " + m(funcef) + "/mês.");
+        }
         if (sobra.signum() < 0) {
             d.add("Seus gastos e aportes passam da renda em R$ " + m(sobra.negate()) + " por mês.");
         } else if (sobra.signum() > 0) {

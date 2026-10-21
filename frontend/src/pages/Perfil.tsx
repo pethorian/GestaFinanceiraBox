@@ -111,6 +111,12 @@ export function Perfil() {
                 </div>
               )}
               <small style={{ color: 'var(--mut)' }}>Contribuição permitida: de 5% a 12% sobre a remuneração base (ou não participar). Também entra na dedução do IR.</small>
+              <div className="funcef-saldo">
+                <small>A contribuição FUNCEF é dinheiro seu guardado para a aposentadoria: entra como poupança na Saúde financeira e na previdência da projeção.</small>
+                <Field label="Saldo atual na FUNCEF (R$)">
+                  <NumberInput prefix="R$" value={p.saldoFuncef ?? 0} onChange={(v) => editarPerfil({ saldoFuncef: Math.max(0, v) })} />
+                </Field>
+              </div>
             </div>
 
             <Switch title="Vale-transporte" hint={`${fmtPct(parametros.beneficios.vtPercentual * 100)} do valor do delta escolhido`} checked={p.valeTransporte} onChange={(v) => editarPerfil({ valeTransporte: v })} />

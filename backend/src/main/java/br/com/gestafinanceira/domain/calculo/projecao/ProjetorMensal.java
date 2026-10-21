@@ -42,11 +42,14 @@ public final class ProjetorMensal {
         List<MesProjecao> resultado = new ArrayList<>(MESES);
         BigDecimal acumulado = dados.perfil().saldoInicial();
         List<BigDecimal> guardado = CalculadoraAportes.guardadoInicial(dados.metas());
+        BigDecimal previdencia = dados.perfil().saldoFuncef();
         for (int i = 0; i < MESES; i++) {
             MesProjecao m = calcularMes(dados, inicio.plusMonths(i), i, false, fonte, guardado);
             guardado = m.metas().stream().map(AporteMeta::guardado).toList();
             acumulado = acumulado.add(m.sobra());
-            resultado.add(m.comAcumulado(Dinheiro.arredondar(acumulado)));
+            previdencia = previdencia.add(m.funcef()).add(m.funcefDecimo());
+            resultado.add(m.comAcumulado(Dinheiro.arredondar(acumulado))
+                    .comPrevidencia(Dinheiro.arredondar(previdencia)));
         }
         return resultado;
     }
@@ -74,6 +77,7 @@ public final class ProjetorMensal {
 
         BigDecimal decimo = Dinheiro.ZERO;
         BigDecimal descontoDecimo = Dinheiro.ZERO;
+        BigDecimal funcefDecimo = Dinheiro.ZERO;
         BigDecimal ferias = Dinheiro.ZERO;
         BigDecimal plr = Dinheiro.ZERO;
         BigDecimal plrBruto = Dinheiro.ZERO;
@@ -88,6 +92,7 @@ public final class ProjetorMensal {
                 if (mes.getMonthValue() == ultimoMes) {
                     descontoDecimo = Calculadora13.descontoNaUltimaParcela(base, parcelas, p,
                             perfil.funcefPct(), perfil.saude(), perfil.dependentes());
+                    funcefDecimo = Funcef.calcular(Calculadora13.totalPago(base, parcelas), perfil.funcefPct());
                 }
             }
             if (perfil.ferias().ativo() && perfil.ferias().mes() == mes.getMonthValue()) {
@@ -128,6 +133,9 @@ public final class ProjetorMensal {
         BigDecimal guardado = metas.stream().map(AporteMeta::guardado).reduce(Dinheiro.ZERO, BigDecimal::add);
         BigDecimal sobra = liquido.subtract(gastos).subtract(aportes);
 
+        // mês isolado: saldo FUNCEF informado + contribuições deste mês (a projeção acumula mês a mês)
+        BigDecimal previdenciaMes = Dinheiro.arredondar(perfil.saldoFuncef().add(funcef).add(funcefDecimo));
+
         List<String> eventos = new ArrayList<>();
         if (decimo.signum() != 0) eventos.add("13º");
         if (ferias.signum() != 0) eventos.add("Férias");
@@ -139,6 +147,7 @@ public final class ProjetorMensal {
                 Dinheiro.arredondar(receitas), Dinheiro.arredondar(descontos), Dinheiro.arredondar(liquido),
                 Dinheiro.arredondar(gastos), Dinheiro.arredondar(aportes), Dinheiro.arredondar(sobra), Dinheiro.ZERO,
                 Dinheiro.arredondar(guardado), Dinheiro.arredondar(guardado), evento,
-                bruta, bruta.compareTo(p.inssTetoSalario()) > 0, plrBruto, plrDesconto, metas);
+                bruta, bruta.compareTo(p.inssTetoSalario()) > 0, plrBruto, plrDesconto, metas,
+                funcefDecimo, previdenciaMes, Dinheiro.arredondar(guardado.add(previdenciaMes)));
     }
 }

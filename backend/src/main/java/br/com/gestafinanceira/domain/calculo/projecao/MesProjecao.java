@@ -16,6 +16,11 @@ import java.util.List;
  * líquido − gastos − aportes; {@code acumulado} é o dinheiro disponível em conta (saldo inicial + sobras);
  * {@code guardado} é a soma dos saldos das metas ao fim do mês; {@code patrimonio} = acumulado + guardado.
  * {@code metas} detalha aporte e guardado de cada meta.
+ *
+ * <p>Previdência (FUNCEF): a contribuição do participante é dinheiro guardado, não gasto. {@code funcefDecimo} é a
+ * parte da contribuição retida na última parcela do 13º (já dentro de {@code descontoDecimo}); {@code previdencia}
+ * é o saldo FUNCEF ao fim do mês (saldo informado + contribuições acumuladas, sem rendimento). {@code patrimonio}
+ * segue sendo acumulado + guardado; {@code patrimonioTotal} = patrimonio + previdencia.
  */
 public record MesProjecao(
         int indice,
@@ -50,13 +55,26 @@ public record MesProjecao(
         boolean tetoInssAplicado,
         BigDecimal plrBruto,
         BigDecimal plrDesconto,
-        List<AporteMeta> metas) {
+        List<AporteMeta> metas,
+        BigDecimal funcefDecimo,
+        BigDecimal previdencia,
+        BigDecimal patrimonioTotal) {
 
     /** Mesmo mês com o saldo disponível em conta informado (o patrimônio acompanha). */
     public MesProjecao comAcumulado(BigDecimal valor) {
         return new MesProjecao(indice, competencia, base, sobreaviso, creche, homeOffice, vrVa, decimo, ferias, plr, bonus,
                 inss, irpf, funcef, saude, valeTransporte, sindicato, descontoDecimo, receitas, descontos,
                 liquido, gastos, aportes, sobra, valor, guardado, Dinheiro.arredondar(valor.add(guardado)), evento,
-                baseInss, tetoInssAplicado, plrBruto, plrDesconto, metas);
+                baseInss, tetoInssAplicado, plrBruto, plrDesconto, metas, funcefDecimo, previdencia,
+                Dinheiro.arredondar(valor.add(guardado).add(previdencia)));
+    }
+
+    /** Mesmo mês com o saldo FUNCEF ao fim do mês informado (o patrimônio total acompanha). */
+    public MesProjecao comPrevidencia(BigDecimal saldo) {
+        return new MesProjecao(indice, competencia, base, sobreaviso, creche, homeOffice, vrVa, decimo, ferias, plr, bonus,
+                inss, irpf, funcef, saude, valeTransporte, sindicato, descontoDecimo, receitas, descontos,
+                liquido, gastos, aportes, sobra, acumulado, guardado, patrimonio, evento,
+                baseInss, tetoInssAplicado, plrBruto, plrDesconto, metas, funcefDecimo, saldo,
+                Dinheiro.arredondar(patrimonio.add(saldo)));
     }
 }

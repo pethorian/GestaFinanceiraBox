@@ -41,7 +41,7 @@ public class PerfilService {
     public PerfilDto buscar() {
         Perfil p = entidade();
         return new PerfilDto(p.cargoId, p.delta, p.diasSobreaviso, p.filhos, p.homeOffice, p.vrVa, p.saude,
-                p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial, p.nome);
+                p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial, p.nome, p.saldoFuncef);
     }
 
     public PerfilDto atualizar(PerfilDto d) {
@@ -74,6 +74,10 @@ public class PerfilService {
         p.valeTransporte = d.valeTransporte();
         p.sindicato = d.sindicato();
         p.saldoInicial = d.saldoInicial();
+        // saldoFuncef ausente (null) mantém o atual
+        if (d.saldoFuncef() != null) {
+            p.saldoFuncef = d.saldoFuncef();
+        }
         // nome ausente (null) mantém o atual; vazio/branco limpa para null
         if (d.nome() != null) {
             p.nome = d.nome().isBlank() ? null : d.nome();
@@ -147,6 +151,7 @@ public class PerfilService {
         p.valeTransporte = true;
         p.sindicato = true;
         p.saldoInicial = BigDecimal.valueOf(3200);
+        p.saldoFuncef = BigDecimal.ZERO;
         p.feriasAtivo = true;
         p.feriasMes = 7;
         p.feriasAbono = false;

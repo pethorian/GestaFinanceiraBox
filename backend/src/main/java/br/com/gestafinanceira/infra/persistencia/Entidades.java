@@ -137,6 +137,7 @@ public final class Entidades {
         @Column(name = "decimo_ativo") public boolean decimoAtivo = true;
         @Column(name = "metodo_50_30_20") public boolean metodo503020;
         public String nome;
+        @Column(name = "saldo_funcef") public BigDecimal saldoFuncef = BigDecimal.ZERO;
         @Column(name = "atualizado_em") public LocalDateTime atualizadoEm = LocalDateTime.now();
     }
 

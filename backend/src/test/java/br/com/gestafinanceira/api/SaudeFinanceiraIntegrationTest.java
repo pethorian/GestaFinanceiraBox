@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -72,6 +74,16 @@ class SaudeFinanceiraIntegrationTest {
         json(post("/api/lancamentos"), """
                 {"descricao":"x","categoria":"%s","tipo":"RECORRENTE","valor":%d,"mesInicial":"2026-10","parcelas":0}"""
                 .formatted(categoria, valor)).andExpect(status().isCreated());
+    }
+
+    private ObjectNode perfilAtual() throws Exception {
+        return (ObjectNode) ler(mvc.perform(get("/api/perfil")).andExpect(status().isOk()));
+    }
+
+    private void semFuncef() throws Exception {
+        ObjectNode p = perfilAtual();
+        p.put("funcefPct", 0);
+        json(put("/api/perfil"), p.toString()).andExpect(status().isOk());
     }
 
     private static BigDecimal v(JsonNode n) {
@@ -149,6 +161,7 @@ class SaudeFinanceiraIntegrationTest {
         for (JsonNode m : ler(mvc.perform(get("/api/metas")))) {
             mvc.perform(delete("/api/metas/" + m.get("id").asText())).andExpect(status().isNoContent());
         }
+        semFuncef();
         JsonNode antes = saude();
         assertEquals(0, v(antes.at("/atual/poupanca")).signum());
         BigDecimal rec = v(antes.at("/recomendado/poupanca"));
@@ -160,6 +173,42 @@ class SaudeFinanceiraIntegrationTest {
         assertEquals(0, v(s.at("/atual/poupanca")).compareTo(new BigDecimal("500")));
         assertEquals(0, v(s.get("aporteSugerido"))
                 .compareTo(rec.subtract(new BigDecimal("500")).max(BigDecimal.ZERO)));
+    }
+
+    @Test
+    void funcefContaComoPoupancaEAcrescentaARenda() throws Exception {
+        limparGastos();
+        for (JsonNode m : ler(mvc.perform(get("/api/metas")))) {
+            mvc.perform(delete("/api/metas/" + m.get("id").asText())).andExpect(status().isNoContent());
+        }
+        semFuncef();
+        JsonNode sem = saude();
+        assertEquals(0, v(sem.at("/poupancaDetalhe/funcef")).signum());
+        assertEquals(0, v(sem.at("/atual/poupanca")).signum());
+
+        ObjectNode p = perfilAtual();
+        p.put("funcefPct", 6);
+        json(put("/api/perfil"), p.toString()).andExpect(status().isOk());
+        JsonNode com = saude();
+        BigDecimal funcef = v(com.at("/poupancaDetalhe/funcef"));
+        assertTrue(funcef.signum() > 0);
+        // a FUNCEF sai do líquido e volta: renda = líquido do mês comum + FUNCEF, poupança = metas + FUNCEF
+        JsonNode comum = ler(mvc.perform(get("/api/projecao/mes-comum")).andExpect(status().isOk()));
+        assertEquals(0, v(com.get("rendaMensal")).compareTo(v(comum.get("liquido")).add(funcef)));
+        assertEquals(0, v(comum.get("funcef")).compareTo(funcef));
+        assertEquals(0, v(com.at("/atual/poupanca")).compareTo(funcef));
+        assertEquals(0, v(com.at("/poupancaDetalhe/metas")).signum());
+
+        json(post("/api/metas"), "{\"nome\":\"Reserva\",\"valorAlvo\":0,\"valorAtual\":0,\"aporteMensal\":500}")
+                .andExpect(status().isCreated());
+        JsonNode s = saude();
+        assertEquals(0, v(s.at("/poupancaDetalhe/metas")).compareTo(new BigDecimal("500")));
+        assertEquals(0, v(s.at("/atual/poupanca")).compareTo(funcef.add(new BigDecimal("500"))));
+        boolean achou = false;
+        for (JsonNode d : s.get("diagnostico")) {
+            if (d.asText().contains("FUNCEF")) achou = true;
+        }
+        assertTrue(achou);
     }
 
     @Test

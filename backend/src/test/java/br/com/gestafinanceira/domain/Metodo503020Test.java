@@ -20,6 +20,28 @@ class Metodo503020Test {
     }
 
     @Test
+    void funcefSomaNaPoupancaEFicaNoDetalhe() {
+        // renda 10000 (já com FUNCEF), metas 500 + FUNCEF 700 = 1200 (12%)
+        Resultado r = Metodo503020.calcular(d("10000"), d("4000"), d("2000"), d("500"), d("700"));
+        assertEquals(d("1200.00"), r.atual().poupanca());
+        assertEquals(d("500.00"), r.poupancaDetalhe().metas());
+        assertEquals(d("700.00"), r.poupancaDetalhe().funcef());
+        assertEquals(d("12.0"), r.percentuais().poupanca());
+        assertEquals(StatusFaixa.ABAIXO, r.status().poupanca());
+        assertEquals(d("800.00"), r.aporteSugerido());
+        assertTrue(r.diagnostico().contains("Sua contribuição FUNCEF já conta como poupança: R$ 700,00/mês."));
+    }
+
+    @Test
+    void semFuncefNadaMuda() {
+        Resultado antigo = calc("10000", "4000", "2000", "500");
+        Resultado novo = Metodo503020.calcular(d("10000"), d("4000"), d("2000"), d("500"), BigDecimal.ZERO);
+        assertEquals(antigo, novo);
+        assertEquals(d("0.00"), novo.poupancaDetalhe().funcef());
+        assertTrue(novo.diagnostico().stream().noneMatch(x -> x.contains("FUNCEF")));
+    }
+
+    @Test
     void faixasRecomendadas() {
         Resultado r = calc("10000", "5000", "3000", "2000");
         assertEquals(d("5000.00"), r.recomendado().necessidades());

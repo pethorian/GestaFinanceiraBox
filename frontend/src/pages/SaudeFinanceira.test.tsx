@@ -19,6 +19,7 @@ const base: SaudeFinanceira = {
     { nome: 'Lazer', grupo: 'DESEJO', mediaMensal: 900 },
   ],
   diagnostico: ['Seus gastos obrigatórios estão em 56% da renda (meta: até 50%).'],
+  poupancaDetalhe: { metas: 400, funcef: 0 },
 }
 
 const render = (s: SaudeFinanceira) =>
@@ -61,6 +62,17 @@ describe('Saúde financeira: participando', () => {
   it('sem renda mostra "—" nos percentuais', () => {
     const semRenda = render({ ...base, participa: true, rendaMensal: 0, percentuais: null })
     expect(semRenda).toContain('—')
+  })
+})
+
+describe('Saúde financeira: FUNCEF como poupança', () => {
+  it('mostra o detalhe Metas + FUNCEF quando há FUNCEF', () => {
+    const html = render({ ...base, participa: true, atual: { ...base.atual, poupanca: 900 }, poupancaDetalhe: { metas: 400, funcef: 500 } })
+    expect(html).toContain('FUNCEF')
+    expect(html).toContain('sf-split')
+  })
+  it('sem FUNCEF não mostra o detalhe', () => {
+    expect(render({ ...base, participa: true })).not.toContain('sf-split')
   })
 })
 

@@ -45,14 +45,17 @@ export function Projecao() {
               <Icon name={r.variacaoSaldo >= 0 ? 'up' : 'down'} size={14} />{fmt(Math.abs(r.variacaoSaldo))} em relação a hoje
             </span>
             <small className="hero-sub">Hoje {fmt(projecao.saldoInicial)} · sobra média {fmt(r.sobraMedia)}/mês{r.aportes > 0 && ', já sem os aportes'}</small>
-            {(r.guardadoFinal > 0 || r.aportes > 0) && (
-              <div className="hero-metas" title="Os aportes saem do saldo disponível, mas continuam seus: ficam guardados nas metas.">
-                <span><small>Guardado em metas</small><b className="num">{fmt(r.guardadoFinal)}</b><small>+{fmt(r.aportes)} no período</small></span>
-                <span><small>Patrimônio</small><b className="num">{fmt(r.patrimonioFinal)}</b><small>disponível + guardado</small></span>
-              </div>
-            )}
           </div>
           <Spark meses={ms} saldoInicial={projecao.saldoInicial} />
+          {(r.guardadoFinal > 0 || r.aportes > 0 || r.previdenciaFinal > 0) && (
+            <div className={`hero-metas${r.previdenciaFinal > 0 ? " tres" : ""}`} title="Os aportes saem do saldo disponível, mas continuam seus: ficam guardados nas metas. A contribuição FUNCEF é guardada na previdência.">
+              <span title={`+${fmt(r.aportes)} no período`}><small>Guardado em metas</small><b className="num">{fmt(r.guardadoFinal)}</b><small>+{fmt(r.aportes)} no período</small></span>
+              {r.previdenciaFinal > 0 && (
+                <span title={`+${fmt(r.previdenciaFinal - r.previdenciaInicial)} no período (contribuições do participante, sem rendimento)`}><small>Previdência FUNCEF</small><b className="num">{fmt(r.previdenciaFinal)}</b><small>+{fmt(r.previdenciaFinal - r.previdenciaInicial)} no período</small></span>
+              )}
+              <span title={r.previdenciaFinal > 0 ? `Disponível ${fmt(r.saldoFinal)} + metas ${fmt(r.guardadoFinal)} + previdência ${fmt(r.previdenciaFinal)}` : undefined}><small>{r.previdenciaFinal > 0 ? `Patrimônio total` : `Patrimônio`}</small><b className="num">{fmt(r.patrimonioTotalFinal)}</b><small>{r.previdenciaFinal > 0 ? 'disponível + metas + previdência' : 'disponível + guardado'}</small></span>
+            </div>
+          )}
         </Card>
 
         <div className="kpis2">
