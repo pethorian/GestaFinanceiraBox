@@ -41,7 +41,6 @@ export const api = {
       ativo: plr.ativo,
       parcelas: plr.parcelas.map(({ mes, percentual, valor }) => ({ mes, percentual, valor })),
     }),
-  novaParcelaPlr: () => http.post<Plr>('/api/plr/parcelas'),
 
   /** nova linha com os valores padrão definidos pelo servidor */
   novoLancamento: () => http.post<Lancamento>('/api/lancamentos/novo'),

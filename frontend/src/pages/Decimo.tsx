@@ -11,7 +11,7 @@ const OPCOES_MES = MES_LONGO.map((n, i) => <option key={n} value={i + 1}>{n}</op
 export function Decimo() {
   const {
     dados, parametros, editarDecimo, adicionarParcelaDecimo, editarFerias,
-    alternarPlr, editarPlr, adicionarParcelaPlr, editarBonus,
+    alternarPlr, editarPlr, editarBonus,
   } = useApp()
   const { decimo, ferias, plr, bonus } = dados
   const { parcelas } = decimo
@@ -89,7 +89,7 @@ export function Decimo() {
               <div style={{ marginTop: 4 }}><AvisoPlr /></div>
               <table style={{ marginTop: 10 }}>
                 <thead>
-                  <tr><th>Mês</th><th>% da estimativa</th><th>Valor (R$)</th><th>Bruto</th><th>Desconto</th><th>Líquido</th><th /></tr>
+                  <tr><th>Mês</th><th>% da estimativa</th><th>Valor (R$)</th><th>Bruto</th><th>Desconto</th><th>Líquido</th></tr>
                 </thead>
                 <tbody>
                   {plr.parcelas.map((e, i) => (
@@ -110,16 +110,14 @@ export function Decimo() {
                       </td>
                       <td>{fmt(e.valorBruto)}</td>
                       <td>{fmt(e.desconto)}</td>
-                      <td>{fmt(e.valorLiquido)}</td>
-                      <td><button className="btn x" aria-label="Remover parcela" onClick={() => editarPlr(plr.parcelas.filter((_, k) => k !== i))}><Icon name="close" size={14} /></button></td>
+                      <td>{fmt(e.valorLiquido)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="plr-rodape">
-                <button className="btn" onClick={() => void adicionarParcelaPlr()}>+ Parcela</button>
-                <span className="sub">Estimativa anual do cargo: {fmt(plr.estimativaAnual)} (líquido). Valor vazio usa o calculado.</span>
-                {plr.aviso ? <span className="warn" style={{ margin: 0 }}>{plr.aviso}</span> : <span className="ok" style={{ margin: 0 }}>✓ {plr.totalPercentual}% distribuído.</span>}
+                <span>Estimativa anual do cargo: {fmt(plr.estimativaAnual)} (líquido). Valor vazio usa o calculado.</span>
+                {plr.aviso ? <span className="warn">{plr.aviso}</span> : <span className="ok">✓ {plr.totalPercentual}% distribuído.</span>}
               </div>
             </>
           )}
