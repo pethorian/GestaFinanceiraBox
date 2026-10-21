@@ -222,3 +222,24 @@ td input,td select{padding:7px 10px}
 .card.col{padding:12px 16px}
 .card.col h2{margin-bottom:4px}
 .proj-main .mrow{min-height:20px}
+
+/* ---- 13º, férias, bônus e PLR: 3 cards em cima, PLR em largura total, sem rolagem */
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dgrid>.card:nth-child(4){grid-column:1/-1}
+.dgrid .card{padding:10px 16px}
+.dgrid .card h2{margin-bottom:6px}
+.dgrid td select{min-width:0}
+.dgrid>.card:nth-child(4) td select{min-width:120px}
+.dgrid .card td,.dgrid .card th{padding-left:4px;padding-right:4px}
+.dgrid .plr-valor{width:130px}
+@media(max-width:900px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.dgrid{grid-template-columns:minmax(0,1fr)}}
+.plr-rodape{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:8px}
+.dgrid .warn,.dgrid .ok{margin-top:4px}
+.dgrid .card .sw,.dgrid .card label{margin-top:0}
+.dgrid td{padding-top:3px;padding-bottom:3px}
+.dgrid .card input,.dgrid .card select{padding-top:5px;padding-bottom:5px}
+.dgrid>.card:nth-child(4) h2{margin-bottom:0}
+.page:has(.dgrid) .phead{margin-bottom:8px}
+.page:has(.dgrid) h1{font-size:21px;margin-bottom:0}
+.dgrid>.card:nth-child(4) .warn{margin:2px 0 4px}

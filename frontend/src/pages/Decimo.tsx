@@ -26,7 +26,7 @@ export function Decimo() {
 
   return (
     <Page title="13º, férias, PLR e bônus" subtitle="Defina quando cada parcela cai. INSS e IR do 13º são tratados à parte.">
-      <div className="mgrid">
+      <div className="dgrid">
         <Card>
           <h2>13º salário</h2>
           <table>
@@ -64,52 +64,6 @@ export function Decimo() {
         </Card>
 
         <Card>
-          <h2>PLR</h2>
-          <Switch title="Contar com o PLR na projeção" hint="Entra na projeção nos meses das parcelas" checked={plr.ativo} onChange={(v) => void alternarPlr(v)} />
-          {!plr.ativo && <p className="sub" style={{ margin: '10px 0 0' }}>Desligado: nenhuma parcela de PLR entra na projeção.</p>}
-          {plr.ativo && (
-            <>
-              <div style={{ marginTop: 12 }}><AvisoPlr /></div>
-              <table style={{ marginTop: 10 }}>
-                <thead>
-                  <tr><th>Mês</th><th>% da estimativa</th><th>Valor (R$)</th><th>Bruto</th><th>Desconto</th><th>Líquido</th><th /></tr>
-                </thead>
-                <tbody>
-                  {plr.parcelas.map((e, i) => (
-                    <tr key={i}>
-                      <td><select value={e.mes} aria-label="Mês" onChange={(ev) => editarParcelaPlr(i, { mes: Number(ev.target.value) })}>{OPCOES_MES}</select></td>
-                      <td><NumberInput min={1} max={100} value={e.percentual} style={{ width: 80 }} aria-label="Percentual" onChange={(v) => editarParcelaPlr(i, { percentual: v })} /></td>
-                      <td>
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          style={{ width: 120 }}
-                          aria-label="Valor (R$)"
-                          placeholder={String(e.valorBruto)}
-                          value={e.valor ?? ''}
-                          onChange={(ev) => editarParcelaPlr(i, { valor: ev.target.value === '' ? null : Number(ev.target.value) })}
-                        />
-                      </td>
-                      <td>{fmt(e.valorBruto)}</td>
-                      <td>{fmt(e.desconto)}</td>
-                      <td>{fmt(e.valorLiquido)}</td>
-                      <td><button className="btn x" aria-label="Remover parcela" onClick={() => editarPlr(plr.parcelas.filter((_, k) => k !== i))}><Icon name="close" size={14} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="sub" style={{ margin: '6px 0 0', fontSize: 12 }}>Valor vazio usa o calculado (aparece como placeholder).</p>
-              <div style={{ marginTop: 10 }}>
-                <button className="btn" onClick={() => void adicionarParcelaPlr()}>+ Parcela</button>
-              </div>
-              <p className="sub" style={{ margin: '10px 0 0' }}>Estimativa anual do seu cargo: {fmt(plr.estimativaAnual)} (líquido)</p>
-              {plr.aviso ? <div className="warn">{plr.aviso}</div> : <div className="ok">✓ {plr.totalPercentual}% distribuído.</div>}
-            </>
-          )}
-        </Card>
-
-        <Card>
           <h2>Bônus Caixa</h2>
           {bonusIndisponivel && <p className="sub">Disponível apenas para carreiras de 8 horas</p>}
           <fieldset disabled={bonusIndisponivel} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
@@ -126,6 +80,51 @@ export function Decimo() {
             )}
           </fieldset>
         </Card>
+
+        <Card>
+          <h2>PLR</h2>
+          <Switch title="Contar com o PLR na projeção" checked={plr.ativo} onChange={(v) => void alternarPlr(v)} />
+                    {plr.ativo && (
+            <>
+              <div style={{ marginTop: 4 }}><AvisoPlr /></div>
+              <table style={{ marginTop: 10 }}>
+                <thead>
+                  <tr><th>Mês</th><th>% da estimativa</th><th>Valor (R$)</th><th>Bruto</th><th>Desconto</th><th>Líquido</th><th /></tr>
+                </thead>
+                <tbody>
+                  {plr.parcelas.map((e, i) => (
+                    <tr key={i}>
+                      <td><select value={e.mes} aria-label="Mês" onChange={(ev) => editarParcelaPlr(i, { mes: Number(ev.target.value) })}>{OPCOES_MES}</select></td>
+                      <td><NumberInput min={1} max={100} value={e.percentual} style={{ width: 80 }} aria-label="Percentual" onChange={(v) => editarParcelaPlr(i, { percentual: v })} /></td>
+                      <td>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          className="plr-valor"
+                          aria-label="Valor (R$)"
+                          placeholder={String(e.valorBruto)}
+                          value={e.valor ?? ''}
+                          onChange={(ev) => editarParcelaPlr(i, { valor: ev.target.value === '' ? null : Number(ev.target.value) })}
+                        />
+                      </td>
+                      <td>{fmt(e.valorBruto)}</td>
+                      <td>{fmt(e.desconto)}</td>
+                      <td>{fmt(e.valorLiquido)}</td>
+                      <td><button className="btn x" aria-label="Remover parcela" onClick={() => editarPlr(plr.parcelas.filter((_, k) => k !== i))}><Icon name="close" size={14} /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="plr-rodape">
+                <button className="btn" onClick={() => void adicionarParcelaPlr()}>+ Parcela</button>
+                <span className="sub">Estimativa anual do cargo: {fmt(plr.estimativaAnual)} (líquido). Valor vazio usa o calculado.</span>
+                {plr.aviso ? <span className="warn" style={{ margin: 0 }}>{plr.aviso}</span> : <span className="ok" style={{ margin: 0 }}>✓ {plr.totalPercentual}% distribuído.</span>}
+              </div>
+            </>
+          )}
+        </Card>
+
       </div>
     </Page>
   )
