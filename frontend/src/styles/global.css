@@ -84,7 +84,12 @@ svg text{fill:var(--dim);font-size:11px}
 .f{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .f>span{font-weight:500;font-size:13px;color:var(--ink)}
 .f small{color:var(--dim);font-size:12px}
-input[type=text],input[type=number],input[type=month],select{background:rgba(0,0,0,.22);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;width:100%;min-width:0;transition:border-color .15s,box-shadow .15s}
+input[type=text],input[type=number],input[type=month]{background:rgba(0,0,0,.22);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;width:100%;min-width:0;transition:border-color .15s,box-shadow .15s}
+/* select padrão: mesmo corpo dos inputs, seta própria, cor atenuada que acende no hover/foco */
+select{--chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23a3adcf' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
+  appearance:none;-webkit-appearance:none;color-scheme:dark;cursor:pointer;color:var(--mut);background:rgba(0,0,0,.22) var(--chev) no-repeat right 9px center/12px;border:1px solid var(--line2);border-radius:10px;padding:9px 28px 9px 12px;width:100%;min-width:0;text-overflow:ellipsis;transition:border-color .15s,box-shadow .15s,color .15s}
+select:hover,select:focus{color:var(--ink)}
+select option{background:var(--card);color:var(--ink)}
 input:hover,select:hover{border-color:rgba(189,147,249,.4)}
 input:focus,select:focus{border-color:var(--purple);outline:none;box-shadow:0 0 0 3px rgba(189,147,249,.22)}
 input:disabled{opacity:.55}
@@ -225,8 +230,7 @@ td input,td select{padding:7px 10px}
 .dgrid>.card:nth-child(4){grid-column:1/-1}
 .dgrid .card{padding:10px 16px}
 .dgrid .card h2{margin-bottom:6px}
-.dgrid td select{min-width:96px}
-.dgrid>.card:nth-child(4) td select{min-width:120px}
+.dgrid td select{min-width:104px}
 .dgrid .card td,.dgrid .card th{padding-left:4px;padding-right:4px}
 .dgrid .plr-valor{width:130px}
 @media(max-width:1100px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -265,7 +269,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .gcard{display:flex;flex-direction:column;padding:16px 18px}
 .gcard h2{margin-bottom:10px}
 .gcard{--cp:78px}.gcard.semparc{--cp:0px}
-.grow{display:grid;grid-template-columns:minmax(90px,1fr) 112px 92px 122px var(--cp) 104px 30px;gap:6px;align-items:center}
+.grow{display:grid;grid-template-columns:minmax(90px,1fr) 118px 112px 148px var(--cp) 104px 30px;gap:6px;align-items:center}
 .ghead{padding:0 0 6px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 .ghead .r{text-align:right;padding-right:10px}
 .glist{display:flex;flex-direction:column;overflow:auto;max-height:calc(100vh - 330px);min-height:60px}
@@ -273,8 +277,7 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .grow input,.grow select,.grow .nin{padding-top:6px;padding-bottom:6px}
 .grow .nin{padding:0}.grow .nin input{padding:6px 8px}
 .grow .desc{font-weight:500}
-.grow select{padding-left:8px;padding-right:4px;color:var(--mut);background-color:transparent}
-.grow select:hover,.grow select:focus{color:var(--ink)}
+.grow select{padding-left:8px;padding-right:24px;background-color:transparent;background-position:right 7px center}
 .grow input[type=month]{padding-left:8px;padding-right:6px}
 .btn.x.ghost{border-color:transparent;background:none;padding:5px 7px;opacity:.6}
 .btn.x.ghost:hover,.btn.x.ghost:focus-visible{opacity:1}
