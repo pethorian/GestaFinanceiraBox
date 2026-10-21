@@ -1,5 +1,6 @@
 package br.com.gestafinanceira.infra.persistencia;
 
+import br.com.gestafinanceira.domain.modelo.GrupoGasto;
 import br.com.gestafinanceira.domain.modelo.Saude;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import jakarta.persistence.Column;
@@ -134,6 +135,7 @@ public final class Entidades {
         @Column(name = "bonus_salarios") public BigDecimal bonusSalarios = BigDecimal.ZERO;
         @Column(name = "plr_ativo") public boolean plrAtivo;
         @Column(name = "decimo_ativo") public boolean decimoAtivo = true;
+        @Column(name = "metodo_50_30_20") public boolean metodo503020;
         public String nome;
         @Column(name = "atualizado_em") public LocalDateTime atualizadoEm = LocalDateTime.now();
     }
@@ -143,6 +145,7 @@ public final class Entidades {
     public static class Categoria {
         @Id public String nome;
         public int ordem;
+        @Enumerated(EnumType.STRING) public GrupoGasto grupo = GrupoGasto.NECESSIDADE;
     }
 
     @Entity(name = "Lancamento")

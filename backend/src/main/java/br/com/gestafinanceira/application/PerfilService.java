@@ -153,6 +153,7 @@ public class PerfilService {
         p.bonusAtivo = false;
         p.bonusMes = 12;
         p.bonusSalarios = BigDecimal.ZERO;
+        p.metodo503020 = false;
         p.atualizadoEm = LocalDateTime.now();
         perfis.save(p);
     }

@@ -13,9 +13,11 @@ public class DadosService {
     private final DecimoService decimo;
     private final MetaService metas;
     private final PlrService plr;
+    private final SaudeFinanceiraService saude;
 
     public DadosService(PerfilService perfil, LancamentoService lancamentos, DecimoService decimo, MetaService metas,
-                        PlrService plr) {
+                        PlrService plr, SaudeFinanceiraService saude) {
+        this.saude = saude;
         this.plr = plr;
         this.perfil = perfil;
         this.lancamentos = lancamentos;
@@ -25,7 +27,7 @@ public class DadosService {
 
     public DadosDto buscar() {
         return new DadosDto(perfil.buscar(), perfil.buscarFerias(), lancamentos.listar(), decimo.buscar(), metas.listar(),
-                perfil.buscarBonus(), plr.buscar());
+                perfil.buscarBonus(), plr.buscar(), saude.buscar());
     }
 
     /** Volta perfil, gastos, 13º, PLR, bônus e metas ao padrão. Tabelas de parâmetros não são alteradas. */
