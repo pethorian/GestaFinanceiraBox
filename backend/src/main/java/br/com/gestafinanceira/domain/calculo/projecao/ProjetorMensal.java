@@ -14,6 +14,8 @@ import br.com.gestafinanceira.domain.calculo.inss.CalculadoraInss;
 import br.com.gestafinanceira.domain.calculo.plr.CalculadoraPlr;
 import br.com.gestafinanceira.domain.calculo.irpf.CalculadoraIrpf;
 import br.com.gestafinanceira.domain.calculo.irpf.DetalheIrpf;
+import br.com.gestafinanceira.domain.calculo.metas.AporteMeta;
+import br.com.gestafinanceira.domain.calculo.metas.CalculadoraAportes;
 import br.com.gestafinanceira.domain.calculo.remuneracao.Beneficios;
 import br.com.gestafinanceira.domain.calculo.remuneracao.RemuneracaoBase;
 import br.com.gestafinanceira.domain.calculo.remuneracao.Sobreaviso;
@@ -27,7 +29,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/** Orquestra o cálculo dos 12 meses a partir do mês inicial. */
+/**
+ * Orquestra o cálculo dos 12 meses a partir do mês inicial. Os aportes das metas saem da sobra de cada mês
+ * ({@link CalculadoraAportes}); o saldo guardado de cada meta passa de um mês para o seguinte.
+ */
 public final class ProjetorMensal {
     public static final int MESES = 12;
 
@@ -36,17 +41,27 @@ public final class ProjetorMensal {
     public static List<MesProjecao> projetar(DadosProjecao dados, YearMonth inicio, FonteParametros fonte) {
         List<MesProjecao> resultado = new ArrayList<>(MESES);
         BigDecimal acumulado = dados.perfil().saldoInicial();
+        List<BigDecimal> guardado = CalculadoraAportes.guardadoInicial(dados.metas());
         for (int i = 0; i < MESES; i++) {
-            MesProjecao m = calcularMes(dados, inicio.plusMonths(i), i, false, fonte);
+            MesProjecao m = calcularMes(dados, inicio.plusMonths(i), i, false, fonte, guardado);
+            guardado = m.metas().stream().map(AporteMeta::guardado).toList();
             acumulado = acumulado.add(m.sobra());
             resultado.add(m.comAcumulado(Dinheiro.arredondar(acumulado)));
         }
         return resultado;
     }
 
-    /** Calcula um mês isolado (sem acumulado). {@code semEventos} ignora 13º e férias (mês comum). */
+    /**
+     * Calcula um mês isolado (sem acumulado). {@code semEventos} ignora 13º e férias (mês comum). Os aportes
+     * partem dos valores atuais das metas, como no primeiro mês da projeção.
+     */
     public static MesProjecao calcularMes(DadosProjecao dados, YearMonth mes, int indice, boolean semEventos,
                                           FonteParametros fonte) {
+        return calcularMes(dados, mes, indice, semEventos, fonte, CalculadoraAportes.guardadoInicial(dados.metas()));
+    }
+
+    private static MesProjecao calcularMes(DadosProjecao dados, YearMonth mes, int indice, boolean semEventos,
+                                           FonteParametros fonte, List<BigDecimal> guardadoAntes) {
         PerfilCalculo perfil = dados.perfil();
         ParametrosMes pm = fonte.para(mes);
         Parametros p = pm.parametros();
@@ -108,7 +123,10 @@ public final class ProjetorMensal {
                 .add(descontoDecimo);
         BigDecimal liquido = receitas.subtract(descontos);
         BigDecimal gastos = dados.gastos().stream().map(g -> g.valorEm(mes)).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal sobra = liquido.subtract(gastos);
+        List<AporteMeta> metas = CalculadoraAportes.aportarMes(dados.metas(), guardadoAntes);
+        BigDecimal aportes = metas.stream().map(AporteMeta::aporte).reduce(Dinheiro.ZERO, BigDecimal::add);
+        BigDecimal guardado = metas.stream().map(AporteMeta::guardado).reduce(Dinheiro.ZERO, BigDecimal::add);
+        BigDecimal sobra = liquido.subtract(gastos).subtract(aportes);
 
         List<String> eventos = new ArrayList<>();
         if (decimo.signum() != 0) eventos.add("13º");
@@ -119,7 +137,8 @@ public final class ProjetorMensal {
         return new MesProjecao(indice, mes, base, sobreaviso, creche, homeOffice, vrVa, decimo, ferias, plr, bonus,
                 inss, irpf, funcef, saude, vt, sindicato, descontoDecimo,
                 Dinheiro.arredondar(receitas), Dinheiro.arredondar(descontos), Dinheiro.arredondar(liquido),
-                Dinheiro.arredondar(gastos), Dinheiro.arredondar(sobra), Dinheiro.ZERO, evento,
-                bruta, bruta.compareTo(p.inssTetoSalario()) > 0, plrBruto, plrDesconto);
+                Dinheiro.arredondar(gastos), Dinheiro.arredondar(aportes), Dinheiro.arredondar(sobra), Dinheiro.ZERO,
+                Dinheiro.arredondar(guardado), Dinheiro.arredondar(guardado), evento,
+                bruta, bruta.compareTo(p.inssTetoSalario()) > 0, plrBruto, plrDesconto, metas);
     }
 }
