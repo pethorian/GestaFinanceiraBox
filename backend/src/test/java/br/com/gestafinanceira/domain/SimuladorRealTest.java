@@ -3,6 +3,7 @@ package br.com.gestafinanceira.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import br.com.gestafinanceira.domain.calculo.CargoVigente;
+import br.com.gestafinanceira.domain.calculo.FaixaProgressiva;
 import br.com.gestafinanceira.domain.calculo.Parametros;
 import br.com.gestafinanceira.domain.calculo.ParametrosMes;
 import br.com.gestafinanceira.domain.calculo.descontos.Sindicato;
@@ -17,6 +18,7 @@ import br.com.gestafinanceira.domain.calculo.remuneracao.Sobreaviso;
 import br.com.gestafinanceira.domain.modelo.Bonus;
 import br.com.gestafinanceira.domain.modelo.Ferias;
 import br.com.gestafinanceira.domain.modelo.ParcelaDecimo;
+import br.com.gestafinanceira.domain.modelo.ParcelaPlr;
 import br.com.gestafinanceira.domain.modelo.PerfilCalculo;
 import br.com.gestafinanceira.domain.modelo.Saude;
 import java.math.BigDecimal;
@@ -121,27 +123,95 @@ class SimuladorRealTest {
 
     // ---- PLR ----------------------------------------------------------------------------------
 
-    @Test
-    void plrEntraComoReceitaLiquidaNoMesDaParcelaSemAlterarOInss() {
-        ParametrosMes pm = new ParametrosMes(P, TECNICO, bd("4351.71"));
+    // Tabela exclusiva do PLR 2026 (mesma da migração V5)
+    private static final List<FaixaProgressiva> TABELA_PLR = List.of(
+            new FaixaProgressiva(bd("8214.40"), bd("0"), bd("0")),
+            new FaixaProgressiva(bd("9922.28"), bd("0.075"), bd("616.08")),
+            new FaixaProgressiva(bd("13167.00"), bd("0.15"), bd("1360.25")),
+            new FaixaProgressiva(bd("16380.38"), bd("0.225"), bd("2347.78")),
+            new FaixaProgressiva(null, bd("0.275"), bd("3166.80")));
+    private static final Parametros P_PLR = P.comFaixasPlr(TABELA_PLR);
+
+    private MesProjecao mesPlr(List<ParcelaPlr> plr, YearMonth mes) {
+        ParametrosMes pm = new ParametrosMes(P_PLR, TECNICO, bd("4351.71"));
         PerfilCalculo pf = perfil(201, 0, "0", false, false, 0, false, Bonus.INATIVO);
-        List<ParcelaDecimo> plr = List.of(new ParcelaDecimo(3, bd("40")), new ParcelaDecimo(9, bd("60")));
-        MesProjecao comum = mes(pm, pf, List.of(), List.of());
-        MesProjecao marco = ProjetorMensal.calcularMes(new DadosProjecao(pf, List.of(), List.of(), plr),
-                YearMonth.of(2027, 3), 0, false, f -> pm);
-        MesProjecao junho = ProjetorMensal.calcularMes(new DadosProjecao(pf, List.of(), List.of(), plr),
-                YearMonth.of(2027, 6), 0, false, f -> pm);
-        assertThat(marco.plr()).isEqualByComparingTo("5222.05"); // 13055,13 × 40%
-        assertThat(marco.evento()).isEqualTo("PLR");
-        assertThat(marco.receitas()).isEqualByComparingTo(comum.receitas().add(bd("5222.05")));
-        assertThat(marco.inss()).isEqualByComparingTo(comum.inss());
-        assertThat(marco.irpf().imposto()).isEqualByComparingTo(comum.irpf().imposto());
-        assertThat(marco.descontos()).isEqualByComparingTo(comum.descontos());
-        assertThat(junho.plr()).isEqualByComparingTo("0");
-        assertThat(junho.evento()).isEmpty();
+        return ProjetorMensal.calcularMes(new DadosProjecao(pf, List.of(), List.of(), plr), mes, 0, false, f -> pm);
+    }
+
+    private static final List<ParcelaPlr> PADRAO = List.of(new ParcelaPlr(9, bd("50")), new ParcelaPlr(3, bd("50")));
+
+    @Test
+    void plrInativoNaoEntraNaProjecao() {
+        // inativo => o serviço entrega lista vazia ao motor
+        for (int m = 1; m <= 12; m++) {
+            MesProjecao r = mesPlr(List.of(), YearMonth.of(2027, m));
+            assertThat(r.plr()).isEqualByComparingTo("0");
+            assertThat(r.plrBruto()).isEqualByComparingTo("0");
+            assertThat(r.evento()).isEmpty();
+        }
+    }
+
+    @Test
+    void plrPadraoSetembroIsentoEMarcoCarregaOIrExclusivoSemInss() {
+        MesProjecao comum = mesPlr(List.of(), YearMonth.of(2027, 3));
+        MesProjecao set = mesPlr(PADRAO, YearMonth.of(2027, 9));
+        MesProjecao mar = mesPlr(PADRAO, YearMonth.of(2027, 3));
+        // 13055,13 × 50% = 6527,57 em cada parcela; total 13055,14 → 15%: 1958,27 − 1360,25 = 598,02 (só no saldo)
+        assertThat(set.plrBruto()).isEqualByComparingTo("6527.57");
+        assertThat(set.plrDesconto()).isEqualByComparingTo("0");
+        assertThat(set.plr()).isEqualByComparingTo("6527.57");
+        assertThat(set.evento()).isEqualTo("PLR");
+        assertThat(mar.plrBruto()).isEqualByComparingTo("6527.57");
+        assertThat(mar.plrDesconto()).isEqualByComparingTo("598.02");
+        assertThat(mar.plr()).isEqualByComparingTo("5929.55");
+        assertThat(mar.receitas()).isEqualByComparingTo(comum.receitas().add(bd("5929.55")));
+        // PLR não tem INSS nem altera o IRPF do mês
+        assertThat(mar.inss()).isEqualByComparingTo(comum.inss());
+        assertThat(mar.irpf().imposto()).isEqualByComparingTo(comum.irpf().imposto());
+        assertThat(mar.descontos()).isEqualByComparingTo(comum.descontos());
+        assertThat(mesPlr(PADRAO, YearMonth.of(2027, 6)).plr()).isEqualByComparingTo("0");
         // mês comum ignora eventos
-        assertThat(ProjetorMensal.calcularMes(new DadosProjecao(pf, List.of(), List.of(), plr),
-                YearMonth.of(2027, 3), 0, true, f -> pm).plr()).isEqualByComparingTo("0");
+        ParametrosMes pm = new ParametrosMes(P_PLR, TECNICO, bd("4351.71"));
+        assertThat(ProjetorMensal.calcularMes(new DadosProjecao(perfil(201, 0, "0", false, false, 0, false, Bonus.INATIVO),
+                List.of(), List.of(), PADRAO), YearMonth.of(2027, 3), 0, true, f -> pm).plr()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void valorInformadoSubstituiOCalculadoEMudaAFaixaDoIr() {
+        // setembro informado em 10.000,00 bruto; março 50% = 6.527,57 → total 16.527,57 → 27,5%: 4.545,08 − 3.166,80 = 1.378,28
+        List<ParcelaPlr> plr = List.of(new ParcelaPlr(9, bd("50"), bd("10000")), new ParcelaPlr(3, bd("50")));
+        MesProjecao set = mesPlr(plr, YearMonth.of(2027, 9));
+        MesProjecao mar = mesPlr(plr, YearMonth.of(2027, 3));
+        assertThat(set.plrBruto()).isEqualByComparingTo("10000.00");
+        assertThat(set.plr()).isEqualByComparingTo("10000.00");
+        assertThat(mar.plrDesconto()).isEqualByComparingTo("1378.28");
+        assertThat(mar.plr()).isEqualByComparingTo("5149.29");
+    }
+
+    @Test
+    void plrAbaixoDaFaixaIsentaNaoTemDesconto() {
+        List<ParcelaPlr> plr = List.of(new ParcelaPlr(9, bd("50"), bd("3000")), new ParcelaPlr(3, bd("50"), bd("5000")));
+        MesProjecao mar = mesPlr(plr, YearMonth.of(2027, 3)); // total 8.000 ≤ 8.214,40
+        assertThat(mar.plrDesconto()).isEqualByComparingTo("0");
+        assertThat(mar.plr()).isEqualByComparingTo("5000.00");
+    }
+
+    @Test
+    void mesAlteradoDaParcelaMudaOMesDoEventoMantendoOSaldoComODesconto() {
+        List<ParcelaPlr> plr = List.of(new ParcelaPlr(8, bd("50")), new ParcelaPlr(3, bd("50")));
+        assertThat(mesPlr(plr, YearMonth.of(2027, 9)).plr()).isEqualByComparingTo("0");
+        MesProjecao ago = mesPlr(plr, YearMonth.of(2027, 8));
+        assertThat(ago.plr()).isEqualByComparingTo("6527.57");
+        assertThat(ago.plrDesconto()).isEqualByComparingTo("0");
+        assertThat(mesPlr(plr, YearMonth.of(2027, 3)).plrDesconto()).isEqualByComparingTo("598.02");
+    }
+
+    @Test
+    void parcelaUnicaCarregaTodoOImposto() {
+        List<ParcelaPlr> plr = List.of(new ParcelaPlr(3, bd("100")));
+        MesProjecao mar = mesPlr(plr, YearMonth.of(2027, 3)); // 13.055,13 → 15%: 1.958,27 − 1.360,25 = 598,02
+        assertThat(mar.plrDesconto()).isEqualByComparingTo("598.02");
+        assertThat(mar.plr()).isEqualByComparingTo("12457.11");
     }
 
     // ---- bônus Caixa --------------------------------------------------------------------------
@@ -177,7 +247,7 @@ class SimuladorRealTest {
         PerfilCalculo pf = new PerfilCalculo(201, 0, 1, true, true, Saude.NAO, 0, bd("5"), true, true, bd("0"),
                 new Ferias(true, 12, false), new Bonus(true, 12, bd("1")));
         DadosProjecao dados = new DadosProjecao(pf, List.of(), List.of(new ParcelaDecimo(12, bd("100"))),
-                List.of(new ParcelaDecimo(12, bd("100"))));
+                List.of(new ParcelaPlr(12, bd("100"))));
         MesProjecao dez = ProjetorMensal.calcularMes(dados, YearMonth.of(2026, 12), 0, false, f -> pm);
         assertThat(dez.evento()).isEqualTo("13º + Férias + PLR + Bônus");
         MesProjecao comum = ProjetorMensal.calcularMes(dados, YearMonth.of(2026, 12), 0, true, f -> pm);
@@ -185,7 +255,7 @@ class SimuladorRealTest {
         assertThat(dez.baseInss()).isEqualByComparingTo(comum.base().add(comum.sobreaviso()));
     }
 
-    private static MesProjecao mes(ParametrosMes pm, PerfilCalculo pf, List<ParcelaDecimo> decimo, List<ParcelaDecimo> plr) {
+    private static MesProjecao mes(ParametrosMes pm, PerfilCalculo pf, List<ParcelaDecimo> decimo, List<ParcelaPlr> plr) {
         return ProjetorMensal.calcularMes(new DadosProjecao(pf, List.of(), decimo, plr), YearMonth.of(2027, 1), 0,
                 false, f -> pm);
     }

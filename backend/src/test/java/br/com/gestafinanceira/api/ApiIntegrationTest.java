@@ -1,5 +1,6 @@
 package br.com.gestafinanceira.api;
 
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -246,7 +247,8 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.lancamentos", hasSize(7)))
                 .andExpect(jsonPath("$.metas", hasSize(3)))
                 .andExpect(jsonPath("$.decimo.parcelas", hasSize(2)))
-                .andExpect(jsonPath("$.plr.parcelas", hasSize(0)))
+                .andExpect(jsonPath("$.plr.ativo", is(false)))
+                .andExpect(jsonPath("$.plr.parcelas", hasSize(2)))
                 .andExpect(jsonPath("$.bonus.ativo", is(false)));
         mvc.perform(get("/api/dados")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.perfil.cargoId", notNullValue()))
@@ -337,13 +339,24 @@ class ApiIntegrationTest {
     // ---- PLR --------------------------------------------------------------------------------------
 
     @Test
-    void plrPadraoVazioComEstimativaDoCargoEValidacoes() throws Exception {
+    void plrPadraoInativoComParcelasSetMarEValidacoes() throws Exception {
+        mvc.perform(post("/api/dados/restaurar")).andExpect(status().isOk());
         mvc.perform(get("/api/plr")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.parcelas", hasSize(0))).andExpect(jsonPath("$.totalPercentual", is(0)))
+                .andExpect(jsonPath("$.ativo", is(false)))
+                .andExpect(jsonPath("$.parcelas", hasSize(2))).andExpect(jsonPath("$.totalPercentual", is(100)))
+                .andExpect(jsonPath("$.parcelas[0].mes", is(3)))
+                .andExpect(jsonPath("$.parcelas[1].mes", is(9)))
+                .andExpect(jsonPath("$.parcelas[1].valor").value(org.hamcrest.Matchers.nullValue()))
+                // 13055,13 × 50% = 6527,57 cada; saldo (mar) carrega o IR do total (598,02); set isento
+                .andExpect(jsonPath("$.parcelas[0].valorBruto", is(6527.57)))
+                .andExpect(jsonPath("$.parcelas[0].desconto", is(598.02)))
+                .andExpect(jsonPath("$.parcelas[0].valorLiquido", is(5929.55)))
+                .andExpect(jsonPath("$.parcelas[1].desconto", is(0.0)))
+                .andExpect(jsonPath("$.parcelas[1].valorLiquido", is(6527.57)))
                 .andExpect(jsonPath("$.aviso").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.estimativaAnual", is(13055.13))); // Técnico Bancário Novo
         json(put("/api/plr"), """
-                {"parcelas": [{"mes": 3, "percentual": 60}, {"mes": 9, "percentual": 60}]}""")
+                {"ativo": true, "parcelas": [{"mes": 3, "percentual": 60}, {"mes": 9, "percentual": 60}]}""")
                 .andExpect(status().isUnprocessableEntity());
         json(put("/api/plr"), """
                 {"parcelas": [{"mes": 3, "percentual": 30}, {"mes": 3, "percentual": 30}]}""")
@@ -351,7 +364,10 @@ class ApiIntegrationTest {
         json(put("/api/plr"), """
                 {"parcelas": [{"mes": 3, "percentual": 0}]}""").andExpect(status().isBadRequest());
         json(put("/api/plr"), """
-                {"parcelas": [{"mes": 3, "percentual": 40}]}""").andExpect(status().isOk())
+                {"parcelas": [{"mes": 3, "percentual": 50, "valor": -1}]}""").andExpect(status().isBadRequest());
+        json(put("/api/plr"), """
+                {"ativo": true, "parcelas": [{"mes": 3, "percentual": 40}]}""").andExpect(status().isOk())
+                .andExpect(jsonPath("$.ativo", is(true)))
                 .andExpect(jsonPath("$.aviso", notNullValue()));
         // 13º intacto: gravar PLR não apaga as parcelas do 13º
         mvc.perform(get("/api/decimo")).andExpect(jsonPath("$.parcelas", hasSize(2)));
@@ -361,27 +377,58 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.parcelas[1].percentual", is(60)))
                 .andExpect(jsonPath("$.totalPercentual", is(100)));
         mvc.perform(post("/api/plr/parcelas")).andExpect(status().isUnprocessableEntity());
+        // ativar sem informar parcelas (lista vazia) volta às padrão
+        json(put("/api/plr"), """
+                {"ativo": true, "parcelas": []}""").andExpect(status().isOk())
+                .andExpect(jsonPath("$.parcelas", hasSize(2)))
+                .andExpect(jsonPath("$.parcelas[0].mes", is(3))).andExpect(jsonPath("$.parcelas[1].mes", is(9)));
+        // ativo omitido mantém o estado atual (retrocompatível)
+        json(put("/api/plr"), """
+                {"parcelas": [{"mes": 3, "percentual": 50}, {"mes": 9, "percentual": 50}]}""").andExpect(status().isOk())
+                .andExpect(jsonPath("$.ativo", is(true)));
+        mvc.perform(post("/api/dados/restaurar")).andExpect(status().isOk());
     }
 
     @Test
-    void plrEntraEmReceitasEEventoDoMesSemMudarInss() throws Exception {
-        String antes = mvc.perform(get("/api/projecao?inicio=2026-11")).andReturn().getResponse().getContentAsString();
+    void plrInativoNaoEntraEAtivoMostraSetIsentoMarcoComIrValorEMesEditaveis() throws Exception {
+        mvc.perform(post("/api/dados/restaurar")).andExpect(status().isOk());
+        String semPlr = mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.meses[*].plr", everyItem(is(0.0))))
+                .andReturn().getResponse().getContentAsString();
+        // ativa com as padrão; início 2026-11 → março = índice 4, setembro = índice 10
         json(put("/api/plr"), """
-                {"parcelas": [{"mes": 2, "percentual": 50}, {"mes": 5, "percentual": 50}]}""").andExpect(status().isOk());
-        // mês 2 (índice 3) também tem 13º: evento unido por " + "
+                {"ativo": true}""").andExpect(status().isOk()).andExpect(jsonPath("$.ativo", is(true)));
         mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.meses[3].plr", is(6527.57))) // 13055,13 × 50%
-                .andExpect(jsonPath("$.meses[3].evento", is("13º + PLR")))
-                .andExpect(jsonPath("$.meses[6].plr", is(6527.57)))
-                .andExpect(jsonPath("$.meses[6].evento", is("PLR")))
-                .andExpect(jsonPath("$.meses[0].plr", is(0.0)))
-                .andExpect(jsonPath("$.meses[0].bonus", is(0.0)))
-                .andExpect(jsonPath("$.meses[0].evento", is("13º")));
+                .andExpect(jsonPath("$.meses[4].plr", is(5929.55)))
+                .andExpect(jsonPath("$.meses[4].plrBruto", is(6527.57)))
+                .andExpect(jsonPath("$.meses[4].plrDesconto", is(598.02)))
+                .andExpect(jsonPath("$.meses[4].evento", is("PLR")))
+                .andExpect(jsonPath("$.meses[10].plr", is(6527.57)))
+                .andExpect(jsonPath("$.meses[10].plrDesconto", is(0.0)))
+                .andExpect(jsonPath("$.meses[10].evento", is("PLR")))
+                .andExpect(jsonPath("$.meses[0].plr", is(0.0)));
         String depois = mvc.perform(get("/api/projecao?inicio=2026-11")).andReturn().getResponse().getContentAsString();
         for (int i = 0; i < 12; i++) {
-            org.assertj.core.api.Assertions.assertThat(mesInss(depois, i)).isEqualTo(mesInss(antes, i));
+            org.assertj.core.api.Assertions.assertThat(mesInss(depois, i)).isEqualTo(mesInss(semPlr, i));
         }
-        mvc.perform(post("/api/dados/restaurar")).andExpect(jsonPath("$.plr.parcelas", hasSize(0)));
+        // valor informado substitui o calculado; mês alterado (set → ago); 10.000 + 6.527,57 = 16.527,57 → IR 1.378,28
+        json(put("/api/plr"), """
+                {"ativo": true, "parcelas": [{"mes": 8, "percentual": 50, "valor": 10000}, {"mes": 3, "percentual": 50}]}""")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.parcelas[1].valor", is(10000)))
+                .andExpect(jsonPath("$.parcelas[1].valorBruto", is(10000.0)));
+        mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.meses[4].plrDesconto", is(1378.28)))
+                .andExpect(jsonPath("$.meses[4].plr", is(5149.29)))
+                .andExpect(jsonPath("$.meses[9].plr", is(10000.0)))
+                .andExpect(jsonPath("$.meses[9].evento", is("PLR")))
+                .andExpect(jsonPath("$.meses[10].plr", is(0.0)));
+        // desativar zera de novo, mantendo as parcelas gravadas
+        json(put("/api/plr"), """
+                {"ativo": false}""").andExpect(status().isOk()).andExpect(jsonPath("$.parcelas", hasSize(2)));
+        mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(jsonPath("$.meses[*].plr", everyItem(is(0.0))));
+        mvc.perform(post("/api/dados/restaurar")).andExpect(jsonPath("$.plr.ativo", is(false)))
+                .andExpect(jsonPath("$.plr.parcelas", hasSize(2)));
     }
 
     // ---- bônus Caixa ------------------------------------------------------------------------------
