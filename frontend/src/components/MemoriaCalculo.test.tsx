@@ -39,6 +39,10 @@ const mesBase = {
   evento: '',
   baseInss: 5000,
   tetoInssAplicado: false,
+  adicionais: [],
+  gastosAdicionais: 0,
+  reservasAdicionais: 0,
+  guardadoReservaAdicionais: 0,
 } as MesProjecao
 
 const AVISO = 'Não conte com esse dinheiro'
@@ -65,7 +69,7 @@ describe('MemoriaCalculo: aportes em metas', () => {
     sobra: 600,
     guardado: 4100,
     patrimonio: 5700,
-    metas: [{ id: 1, nome: 'Reserva de emergência', aporte: 900, guardado: 4100 }],
+    metas: [{ id: 1, nome: 'Reserva de emergência', aporte: 900, guardado: 4100, aporteAdicional: 0 }],
   }
 
   it('mostra o aporte como saída e o guardado/patrimônio', () => {
@@ -95,5 +99,62 @@ describe('MemoriaCalculo: FUNCEF guardada', () => {
   it('sem previdência não mostra o bloco', () => {
     const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
     expect(html).not.toContain('Guardada (previdência)')
+  })
+})
+
+describe('MemoriaCalculo: plano de uso do 13º/PLR', () => {
+  const comPlr: MesProjecao = {
+    ...mesBase,
+    plr: 3000,
+    evento: 'PLR',
+    gastosAdicionais: 1500,
+    reservasAdicionais: 1500,
+    sobra: 1500,
+    guardado: 7600,
+    guardadoReservaAdicionais: 600,
+    metas: [{ id: 7, nome: 'Viagem Europa', aporte: 1000, guardado: 7000, aporteAdicional: 900 }],
+    adicionais: [{
+      evento: 'PLR',
+      liquido: 3000,
+      semDestino: 0,
+      destinos: [
+        { id: 1, nome: 'Viagem', tipo: 'RESERVA', metaId: 7, percentual: 30, valor: 900 },
+        { id: 2, nome: 'Lazer', tipo: 'LAZER', metaId: null, percentual: 50, valor: 1500 },
+        { id: 3, nome: 'Reserva', tipo: 'RESERVA', metaId: null, percentual: 20, valor: 600 },
+      ],
+    }],
+  }
+
+  it('mostra o bloco do adicional com valor e % de cada destino', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={comPlr} onClose={() => {}} />)
+    expect(html).toContain('Do seu PLR deste mês')
+    expect(html).toMatch(/Do seu PLR deste mês \(R\$\s3\.000,00 líquido\)/)
+    expect(html).toContain('Viagem')
+    expect(html).toContain('30%')
+    expect(html).toContain('→ Viagem Europa') // destino ligado à meta
+    expect(html).toMatch(/R\$\s1\.500,00/)
+  })
+
+  it('mostra as saídas dos adicionais no resultado e o extra na meta', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={comPlr} onClose={() => {}} />)
+    expect(html).toContain('Gastos com adicionais')
+    expect(html).toContain('Reservas dos adicionais')
+    expect(html).toMatch(/do 13º\/PLR/)
+    expect(html).toContain('Reserva dos adicionais (sem meta)')
+  })
+
+  it('mostra o que ficou sem destino e o caso sem plano', () => {
+    const parcial = { ...comPlr, adicionais: [{ ...comPlr.adicionais[0], semDestino: 1200, destinos: comPlr.adicionais[0].destinos.slice(0, 2) }] }
+    expect(renderToStaticMarkup(<MemoriaCalculo mes={parcial} onClose={() => {}} />)).toContain('Sem destino')
+    const semPlano = { ...comPlr, adicionais: [{ evento: 'DECIMO' as const, liquido: 2000, semDestino: 2000, destinos: [] }] }
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={semPlano} onClose={() => {}} />)
+    expect(html).toContain('Do seu 13º deste mês')
+    expect(html).toContain('Sem plano de uso')
+  })
+
+  it('sem adicional no mês não mostra o bloco nem as saídas', () => {
+    const html = renderToStaticMarkup(<MemoriaCalculo mes={mesBase} onClose={() => {}} />)
+    expect(html).not.toContain('deste mês')
+    expect(html).not.toContain('Gastos com adicionais')
   })
 })

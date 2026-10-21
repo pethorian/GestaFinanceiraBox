@@ -1,3 +1,4 @@
+import { AdicionaisSaude } from '../components/adicionais'
 import { Icon, type IconName } from '../components/Icon'
 import { DivisaoRendaChart, MetaAtualChart, StatusPill } from '../components/saudeCharts'
 import { Card, Page, Segmented, Switch, cls } from '../components/ui'
@@ -77,6 +78,7 @@ function Convite({ saude, onAlternar }: { saude: Saude; onAlternar: (v: boolean)
           <button className="btn pri" onClick={() => onAlternar(true)}>{TITULO_SWITCH}</button>
         </div>
       </Card>
+      <AdicionaisSaude ad={saude.adicionais} />
     </div>
   )
 }
@@ -110,6 +112,7 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
           <Card className="col sf-diag">
             <h2>Diagnóstico</h2>
             <ul>
+              {/* participando, as frases dos adicionais (que o back end já acrescenta aqui) ficam só neste card */}
               {saude.diagnostico.map((d, i) => <li key={i}><Icon name="info" size={15} />{d}</li>)}
             </ul>
           </Card>
@@ -131,6 +134,8 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
           </Card>
         </div>
 
+        {/* 3ª coluna: categorias (rolam) em cima e o uso do 13º e do PLR, à parte do mês comum, embaixo */}
+        <div className="sf-dir">
         <Card className="col sf-cats">
           <h2>Classifique suas categorias</h2>
           <div className="sf-catlist">
@@ -149,6 +154,9 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
           </div>
           <p className="dim sf-nota">Média mensal. Obrigatório → necessidades; lazer → desejos.</p>
         </Card>
+
+        <AdicionaisSaude ad={saude.adicionais} frases={false} />
+        </div>
       </div>
     </>
   )

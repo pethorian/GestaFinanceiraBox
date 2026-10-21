@@ -106,6 +106,103 @@ export interface Dados {
   metas: Meta[]
   /** método 50/30/20, calculado pelo back end (sempre, mesmo sem adesão) */
   saudeFinanceira: SaudeFinanceira
+  /** plano de uso do 13º e do PLR */
+  adicionais: PlanosAdicionais
+}
+
+// ---- plano de uso do 13º e do PLR -------------------------------------------------------------
+
+export type EventoAdicional = 'DECIMO' | 'PLR'
+/** caminho da API: /api/adicionais/{decimo|plr}/destinos */
+export type ChaveAdicional = 'decimo' | 'plr'
+/** LAZER → desejos; OBRIGATORIO → necessidades; RESERVA → poupança (opcionalmente ligada a uma meta) */
+export type TipoDestino = 'LAZER' | 'OBRIGATORIO' | 'RESERVA'
+
+/** Item enviado no PUT (a lista inteira substitui a anterior). metaId só com RESERVA. */
+export interface DestinoEntrada {
+  nome: string
+  tipo: TipoDestino
+  percentual: number
+  metaId: number | null
+}
+
+export interface DestinoAdicional extends DestinoEntrada {
+  id: number
+  /** nome da meta ligada (null sem meta) */
+  metaNome: string | null
+}
+
+/** Valor de um destino em uma parcela (calculado pelo back end). */
+export interface DestinoValor {
+  id: number | null
+  nome: string
+  tipo: TipoDestino
+  metaId: number | null
+  percentual: number
+  valor: number
+}
+
+/** Divisão do líquido de uma parcela: liquido = soma dos destinos + semDestino. */
+export interface ParcelaAdicional {
+  liquido: number
+  destinos: DestinoValor[]
+  semDestino: number
+}
+
+export interface PreviaAdicional extends ParcelaAdicional {
+  /** "AAAA-MM" */
+  mes: string
+}
+
+export interface PlanoAdicional {
+  evento: EventoAdicional
+  /** o evento entra na projeção (a prévia vem mesmo inativo) */
+  ativo: boolean
+  destinos: DestinoAdicional[]
+  totalPercentual: number
+  /** 100 − totalPercentual */
+  semDestinoPercentual: number
+  /** parcelas dos 12 meses a partir do mês atual */
+  previa: PreviaAdicional[]
+}
+
+export interface PlanosAdicionais {
+  decimo: PlanoAdicional
+  plr: PlanoAdicional
+}
+
+/** Adicional recebido no mês da projeção, já dividido pelo plano. */
+export interface AdicionalMes extends ParcelaAdicional {
+  evento: EventoAdicional
+}
+
+/** Totais do período por tipo de destino: liquido = lazer + obrigatorio + reserva + semDestino. */
+export interface TotaisAdicionais {
+  liquido: number
+  lazer: number
+  obrigatorio: number
+  reserva: number
+  semDestino: number
+}
+
+export interface DivisaoAdicionais {
+  necessidades: number
+  desejos: number
+  poupanca: number
+  semDestino: number
+}
+
+/** Bloco "adicionais" da saúde financeira: uso do 13º/PLR do período × 50/30/20 (à parte do mês comum). */
+export interface SaudeAdicionais {
+  totalLiquidoPeriodo: number
+  divisao: DivisaoAdicionais
+  /** % do total líquido dos adicionais (1 casa); null sem adicional no período */
+  percentuais: DivisaoAdicionais | null
+  comparacao: { recomendado: Faixas<number>; diferenca: Faixas<number>; status: Faixas<StatusFaixa> } | null
+  /** há algum destino definido */
+  definido: boolean
+  /** estas frases também vêm no fim de SaudeFinanceira.diagnostico */
+  diagnostico: string[]
 }
 
 /** NECESSIDADE = gasto obrigatório (faixa dos 50%); DESEJO = lazer (faixa dos 30%) */
@@ -152,6 +249,8 @@ export interface SaudeFinanceira {
   diagnostico: string[]
   /** composição de atual.poupanca: aportes em metas + contribuição FUNCEF */
   poupancaDetalhe: { metas: number; funcef: number }
+  /** uso do 13º e do PLR dos próximos 12 meses, à parte do método mensal */
+  adicionais: SaudeAdicionais
 }
 
 export interface DetalheIrpf {
@@ -170,6 +269,8 @@ export interface AporteMeta {
   nome: string
   aporte: number
   guardado: number
+  /** reserva do 13º/PLR ligada a esta meta no mês (entra antes do aporte mensal) */
+  aporteAdicional: number
 }
 
 export interface MesProjecao {
@@ -218,6 +319,14 @@ export interface MesProjecao {
   evento: string
   baseInss: number
   tetoInssAplicado: boolean
+  /** parcelas de 13º/PLR do mês, divididas pelo plano de uso */
+  adicionais: AdicionalMes[]
+  /** destinos LAZER + OBRIGATORIO dos adicionais (saem da conta, à parte de gastos) */
+  gastosAdicionais: number
+  /** destinos RESERVA dos adicionais (saem do disponível e entram em guardado) */
+  reservasAdicionais: number
+  /** saldo da reserva dos adicionais sem meta, ao fim do mês (já dentro de guardado) */
+  guardadoReservaAdicionais: number
 }
 
 export interface DestaqueMes {
@@ -251,6 +360,10 @@ export interface ResumoProjecao {
   previdenciaFinal: number
   /** patrimonioFinal + previdenciaFinal */
   patrimonioTotalFinal: number
+  /** somas do período do plano de uso do 13º/PLR */
+  gastosAdicionais: number
+  reservasAdicionais: number
+  adicionais: { decimo: TotaisAdicionais; plr: TotaisAdicionais; total: TotaisAdicionais }
 }
 
 export interface Projecao {

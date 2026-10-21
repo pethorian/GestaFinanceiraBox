@@ -1,7 +1,7 @@
 import { rotuloCompetencia } from '../domain/format'
 import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
-  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
+  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas, ChaveAdicional, DestinoEntrada, PlanoAdicional,
 } from '../domain/types'
 import { http } from './http'
 
@@ -47,6 +47,15 @@ export const api = {
       ativo: plr.ativo,
       parcelas: plr.parcelas.map(({ mes, percentual, valor }) => ({ mes, percentual, valor })),
     }),
+
+  // plano de uso do 13º e do PLR
+  planoAdicional: (evento: ChaveAdicional) => http.get<PlanoAdicional>(`/api/adicionais/${evento}/destinos`),
+  /** substitui a lista inteira (vazia = sem destinos); devolve o plano com os valores da prévia */
+  salvarDestinos: (evento: ChaveAdicional, destinos: DestinoEntrada[]) =>
+    http.put<PlanoAdicional>(
+      `/api/adicionais/${evento}/destinos`,
+      destinos.map(({ nome, tipo, percentual, metaId }) => ({ nome, tipo, percentual, metaId: tipo === 'RESERVA' ? metaId : null })),
+    ),
 
   /** nova linha com os valores padrão definidos pelo servidor */
   novoLancamento: () => http.post<Lancamento>('/api/lancamentos/novo'),

@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { fmt, fmtAliquota, tituloCompetencia } from '../domain/format'
 import type { MesProjecao } from '../domain/types'
+import { AdicionalDoMes } from './adicionais'
 import { AvisoPlr } from './AvisoPlr'
 import { Icon } from './Icon'
 import { cls } from './ui'
@@ -70,16 +71,24 @@ export function MemoriaCalculo({ mes, onClose }: { mes: MesProjecao | null; onCl
             <L a="Líquido" b={fmt(m.liquido)} />
             <L a="Gastos" b={`−${fmt(m.gastos)}`} />
             {m.aportes > 0 && <L a="Aportes em metas" b={`−${fmt(m.aportes)}`} />}
+            {m.gastosAdicionais > 0 && <L a="Gastos com adicionais" b={`−${fmt(m.gastosAdicionais)}`} />}
+            {m.reservasAdicionais > 0 && <L a="Reservas dos adicionais" b={`−${fmt(m.reservasAdicionais)}`} />}
             <L a={<b>Sobra</b>} b={<b>{fmt(m.sobra)}</b>} c={cls(m.sobra)} />
             <L a="Saldo disponível acumulado" b={fmt(m.acumulado)} />
           </div>
 
-          {m.metas.length > 0 && (
+          {m.adicionais.map((a) => <AdicionalDoMes key={a.evento} adicional={a} metas={m.metas} />)}
+
+          {(m.metas.length > 0 || m.guardadoReservaAdicionais > 0) && (
             <div className="memo"><h4>Metas</h4>
               {m.metas.map((a) => (
-                <Passo key={a.id} a={`${a.nome}: aporte ${fmt(a.aporte)}`} b={fmt(a.guardado)} />
+                <Passo
+                  key={a.id} b={fmt(a.guardado)}
+                  a={`${a.nome}: aporte ${fmt(a.aporte)}${a.aporteAdicional > 0 ? ` + ${fmt(a.aporteAdicional)} do 13º/PLR` : ''}`}
+                />
               ))}
-              <L a="Guardado em metas" b={fmt(m.guardado)} />
+              {m.guardadoReservaAdicionais > 0 && <Passo a="Reserva dos adicionais (sem meta)" b={fmt(m.guardadoReservaAdicionais)} />}
+              <L a={m.guardadoReservaAdicionais > 0 ? 'Guardado (metas + reserva dos adicionais)' : 'Guardado em metas'} b={fmt(m.guardado)} />
               <L a={<b>Patrimônio (disponível + guardado)</b>} b={<b>{fmt(m.patrimonio)}</b>} />
             </div>
           )}

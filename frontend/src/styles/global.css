@@ -424,3 +424,99 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .sf-poup p.sf-split{display:flex;flex-wrap:wrap;gap:2px 10px;margin:0 0 8px;color:var(--mut)}
 .hero-metas.tres span{grid-template-columns:auto;row-gap:0}
 .hero-metas.tres small:last-child{display:none}
+
+/* ---- Plano de uso do 13º e do PLR: barra da divisão (cores = faixas do 50/30/20; neutra = sem destino),
+   resumo nos cards, editor no painel lateral, bloco do mês na projeção e card na Saúde financeira */
+:root{--f-sem:#5d6178}
+.ad-barw{position:relative;min-width:0}
+.ad-bar{position:relative;display:flex;gap:2px;height:12px;border-radius:4px;overflow:visible}
+.ad-seg{display:block;flex:1 1 0;min-width:2px;height:100%;cursor:default}
+.ad-seg:first-child{border-radius:4px 0 0 4px}.ad-seg:last-child{border-radius:0 4px 4px 0}.ad-seg:only-child{border-radius:4px}
+.ad-seg.vazio{background:rgba(248,248,242,.05);border-radius:4px}
+.ad-seg:hover{filter:brightness(1.15)}
+.ad-tt{left:50%;top:-4px;min-width:150px}
+.ad-leg{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:5px;font-size:11.5px;color:var(--mut)}
+.ad-leg span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.ad-leg b{color:var(--ink);font-weight:600}
+.ad-leg .sem{color:var(--dim)}
+/* resumo no card */
+.ad-resumo{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.ad-resumo-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.ad-resumo-h b{font-size:12.5px;font-weight:600}
+.ad-resumo-h .btn{display:inline-flex;align-items:center;gap:4px;padding:2px 10px}
+.ad-resumo small{font-size:12px}
+/* editor (painel lateral) */
+.ad-lista{display:flex;flex-direction:column}
+.ad-row{display:grid;grid-template-columns:minmax(0,1fr) 116px 64px 28px;gap:6px;align-items:center}
+.ad-head{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:0 0 4px}
+.ad-item{padding:6px 0;border-top:1px solid var(--line)}
+.ad-item input,.ad-item select{padding-top:6px;padding-bottom:6px}
+.ad-item input[type=number]{text-align:right;padding-left:6px;padding-right:8px}
+.ad-meta{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;margin-top:5px;padding-left:12px;font-size:12px;color:var(--mut)}
+.ad-add{display:inline-flex;align-items:center;gap:4px;margin-top:8px}
+.ad-vazio{font-size:12.5px;margin:0}
+.ad-erro{display:flex;gap:8px;margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(255,85,85,.09);border:1px solid rgba(255,85,85,.35);font-size:12.5px}
+.ad-erro svg{color:var(--red);margin-top:2px}
+.ad-erro div{display:flex;flex-direction:column;gap:2px}
+.ad-erro span{color:var(--mut)}
+.memo .ad-barw,.memo .ad-bar,.memo .ad-leg,.memo .ad-tt{padding:0}
+.memo .ad-barw{display:block;margin:2px 0 6px}
+.memo .ad-bar{display:flex;justify-content:flex-start}
+.memo .ad-leg{display:flex;justify-content:flex-start}
+.memo .ad-tt{display:block}
+.memo .ad-tt div{display:flex}
+.memo h4 .num{float:right;text-transform:none;letter-spacing:0;color:var(--mut)}
+.memo .ad-linha span:first-child,.ad-mes>div>span:first-child{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.memo small{color:var(--dim);font-size:11.5px}
+.ad-outras{font-size:11.5px;margin:6px 0 0}
+.ad-mes .ad-tipo{margin-left:4px}
+/* Saúde financeira */
+.sf-adic{flex:none;gap:6px}
+.sf .sf-adic h2{margin-bottom:2px}
+.sf-adic h2 svg{color:var(--pink)}
+.ad-cmp{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;align-items:center}
+.ad-cmp-row{display:contents}
+.ad-cmp-row>span{font-size:12px;color:var(--mut)}
+.ad-faixas{display:flex;flex-direction:column;margin-top:4px}
+.ad-faixas>div{display:grid;grid-template-columns:minmax(0,1fr) 46px auto;gap:6px;align-items:center;padding:2px 0;font-size:12px;border-top:1px solid var(--line)}
+.ad-faixas>div:first-child{border-top:0}
+.ad-faixas span{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.ad-faixas b{text-align:right}
+.ad-faixas small{font-size:11px}
+.ad-diag{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;overflow:auto;min-height:0}
+.ad-diag li{display:flex;gap:6px;font-size:11.5px;line-height:1.35;color:var(--mut)}
+.ad-diag li svg{color:var(--cyan);margin-top:1px}
+.sf-adic .btn{display:inline-flex;align-items:center;gap:6px;text-decoration:none;align-self:flex-start;margin-top:2px}
+/* PLR: parcelas e plano de uso lado a lado (o card não cresce na vertical) */
+.plr-corpo{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,300px);gap:18px;align-items:start}
+.plr-corpo>.ad-resumo{margin-top:10px;padding:0 0 0 18px;border-top:0;border-left:1px solid var(--line);align-self:stretch}
+@media(max-width:1100px){.plr-corpo{grid-template-columns:minmax(0,1fr)}.plr-corpo>.ad-resumo{padding:8px 0 0;border-left:0;border-top:1px solid var(--line)}}
+.ad-mes>div>span:first-child{font-size:13px;flex-wrap:wrap;column-gap:6px;row-gap:0}
+.ad-mes>div{align-items:baseline}
+/* sem adesão: como funciona | prévia | 13º e PLR */
+.sf-convite{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,1fr)}
+.sf-convite .sf-adic{flex:initial;min-height:0}
+.sf-convite .sf-mini{gap:8px}
+.sf-convite .sf-mini>div{padding:8px 10px}
+.sf-adic a.btn:not(.pri){color:var(--ink)}
+@media(max-width:1180px) and (min-width:901px){.sf-convite{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.sf-convite .sf-adic{grid-column:1/-1}}
+/* participando: 3ª coluna = categorias (flexível, rola) + card "13º e PLR" (altura do conteúdo, frases roláveis) */
+.sf-dir{display:flex;flex-direction:column;gap:12px;min-height:0;min-width:0}
+.sf-dir .sf-cats{flex:1 1 0;min-height:120px}
+.sf-dir .sf-adic{flex:none;padding:10px 14px}
+.sf-dir .sf-adic h2 small{display:block;width:100%;margin-top:-2px}
+.sf-dir .sf-adic h2{flex-wrap:wrap;row-gap:0}
+.sf-dir .ad-diag{max-height:62px}
+.ad-cab{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ad-txt{display:flex;flex-direction:column;gap:6px;min-height:0;min-width:0}
+.ad-faixas>div{grid-template-columns:minmax(0,1fr) 44px auto}
+.ad-faixas span{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.sf-dir .sf-cats{flex:none}.sf-dir .ad-diag{max-height:none}}
+
+.ad-nota{font-size:12px;margin:0}
+.sf-adic.compacto{gap:5px}
+.sf-adic.compacto .ad-faixas{margin-top:0}
+.sf-adic.compacto .ad-faixas>div{padding:0;line-height:18px}
+.sf-adic.compacto .sf-st{line-height:16px}
+
+.sf-adic.compacto .ad-faixas>div{font-size:11.5px;column-gap:4px}

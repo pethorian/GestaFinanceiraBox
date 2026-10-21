@@ -3,8 +3,22 @@ import { api } from '../api/api'
 import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, GrupoGasto, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
-  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos,
+  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, ChaveAdicional, DestinoEntrada,
 } from '../domain/types'
+
+/** Erros do plano de uso por evento (null = sem erro). Ficam na tela, sem desfazer o que o usuário digitou. */
+export type ErrosAdicionais = Record<ChaveAdicional, string[] | null>
+
+/** 400: um item por detalhe ("destinos[1].nome: obrigatório" → "Destino 2 (nome): obrigatório"); 422: a mensagem. */
+export function mensagensErroDestinos(e: unknown): string[] {
+  if (!(e instanceof ApiError)) return ['Erro inesperado ao salvar o plano de uso.']
+  if (e.status === 400 && e.detalhes.length > 0) {
+    return e.detalhes.map((d) => d
+      .replace(/^destinos\[(\d+)\]\.?(\w*):\s*/, (_, i: string, campo: string) => `Destino ${Number(i) + 1}${campo ? ` (${campo})` : ''}: `)
+      .replace(/^destinos:\s*/, 'Destinos: '))
+  }
+  return [e.message]
+}
 
 /**
  * Estado da aplicação. Tudo vem do back end: dados do usuário (banco), projeção e demais cálculos.
@@ -43,6 +57,9 @@ interface AppCtx {
   definirGrupoCategoria: (nome: string, grupo: GrupoGasto) => Promise<void>
   /** grava alterações de parâmetros e recarrega tudo (as projeções dependem deles) */
   salvarParametros: (op: () => Promise<unknown>) => Promise<void>
+  /** grava (com atraso) a lista inteira de destinos do 13º ou do PLR; erros 400/422 vão para errosAdicionais */
+  salvarDestinos: (evento: ChaveAdicional, destinos: DestinoEntrada[]) => void
+  errosAdicionais: ErrosAdicionais
 }
 
 interface Carga {
@@ -69,6 +86,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [erroFatal, setErroFatal] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [pendentes, setPendentes] = useState(0)
+  const [errosAdicionais, setErrosAdicionais] = useState<ErrosAdicionais>({ decimo: null, plr: null })
   const cargaRef = useRef<Carga | null>(null)
   cargaRef.current = carga
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
@@ -91,15 +109,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** Pede ao back end a projeção e os resumos atualizados (ignora respostas antigas). */
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
-    const [projecao, mesComum, resumoGastos, plr, saudeFinanceira] = await Promise.all([
+    const [projecao, mesComum, resumoGastos, plr, saudeFinanceira, planoDecimo, planoPlr] = await Promise.all([
       api.projecao(), api.mesComum(), api.resumoGastos(), api.plr(), api.saudeFinanceira(),
+      api.planoAdicional('decimo'), api.planoAdicional('plr'),
     ])
     if (minha === seqCalculos.current) {
       // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela.
       // A saúde financeira depende da renda, dos gastos e dos aportes: volta inteira do servidor.
       setCarga((c) => (c ? {
         ...c, projecao, mesComum, resumoGastos,
-        dados: { ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual } },
+        // o plano de uso (prévia, ativo, nome das metas) depende do salário, dos eventos e das metas: volta inteiro
+        dados: {
+          ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual },
+          adicionais: { decimo: planoDecimo, plr: planoPlr },
+        },
       } : c))
     }
   }, [])
@@ -253,6 +276,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCarga((c) => (c ? { ...c, categorias: c.categorias.map((k) => (k.nome === nome ? { ...k, ...salva } : k)) } : c))
     }),
 
+    salvarDestinos: (evento: ChaveAdicional, destinos: DestinoEntrada[]) => {
+      // o rascunho fica no editor; aqui só se grava a lista inteira depois de um instante sem edições
+      agendar(`adicional:${evento}`, async () => {
+        try {
+          const plano = await api.salvarDestinos(evento, destinos)
+          mudar((d) => ({ ...d, adicionais: { ...d.adicionais, [evento]: plano } }))
+          setErrosAdicionais((e) => ({ ...e, [evento]: null }))
+        } catch (e) {
+          // validação (400) ou regra (422): mostra no editor, sem recarregar a tela nem perder a digitação
+          if (e instanceof ApiError && (e.status === 400 || e.status === 422)) {
+            setErrosAdicionais((x) => ({ ...x, [evento]: mensagensErroDestinos(e) }))
+            return
+          }
+          throw e
+        }
+      })
+    },
+
     salvarParametros: async (op: () => Promise<unknown>) => {
       try {
         await op()
@@ -266,6 +307,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         await api.restaurarPadrao()
         await carregarTudo()
+        setErrosAdicionais({ decimo: null, plr: null })
       } catch (e) {
         setAviso(mensagem(e))
       }
@@ -273,8 +315,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }), [agendar, executar, mudar, carregarTudo])
 
   const valor = useMemo<AppCtx | null>(() => (carga ? {
-    ...carga, ...acoes, salvando: pendentes > 0, aviso, limparAviso: () => setAviso(null),
-  } : null), [carga, acoes, pendentes, aviso])
+    ...carga, ...acoes, salvando: pendentes > 0, aviso, limparAviso: () => setAviso(null), errosAdicionais,
+  } : null), [carga, acoes, pendentes, aviso, errosAdicionais])
 
   if (erroFatal) {
     return (
