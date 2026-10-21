@@ -72,6 +72,17 @@ public final class Entidades {
         @Column(name = "vigencia_fim") public LocalDate vigenciaFim;
     }
 
+    @Entity(name = "PlrFaixa")
+    @Table(name = "tabela_plr_faixa")
+    public static class PlrFaixa {
+        @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
+        public BigDecimal ate;
+        public BigDecimal aliquota;
+        public BigDecimal deducao;
+        @Column(name = "vigencia_inicio") public LocalDate vigenciaInicio;
+        @Column(name = "vigencia_fim") public LocalDate vigenciaFim;
+    }
+
     @Entity(name = "ParametroBeneficio")
     @Table(name = "parametro_beneficio")
     public static class ParametroBeneficio {
@@ -121,6 +132,7 @@ public final class Entidades {
         @Column(name = "bonus_ativo") public boolean bonusAtivo;
         @Column(name = "bonus_mes") public short bonusMes = 12;
         @Column(name = "bonus_salarios") public BigDecimal bonusSalarios = BigDecimal.ZERO;
+        @Column(name = "plr_ativo") public boolean plrAtivo;
         @Column(name = "atualizado_em") public LocalDateTime atualizadoEm = LocalDateTime.now();
     }
 
@@ -151,6 +163,7 @@ public final class Entidades {
         public String tipo = "DECIMO_TERCEIRO";
         public short mes;
         public BigDecimal percentual;
+        public BigDecimal valor;
     }
 
     @Entity(name = "Meta")

@@ -68,8 +68,22 @@ public final class Dtos {
 
     // ---- PLR ----------------------------------------------------------------------------------
 
-    /** Parcelas do PLR (mesmo formato do 13º); {@code estimativaAnual} é o PLR anual do cargo do perfil (só leitura). */
-    public record PlrDto(@NotNull @Valid List<ParcelaDecimoDto> parcelas, BigDecimal totalPercentual, String aviso,
+    /**
+     * Parcela do PLR. Entrada: {@code mes}, {@code percentual} e {@code valor} (bruto, opcional, substitui o calculado).
+     * Saída: também {@code valorBruto}, {@code desconto} (IR exclusivo) e {@code valorLiquido}, calculados (ignorados na entrada).
+     */
+    public record ParcelaPlrDto(
+            @Min(1) @Max(12) int mes,
+            @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("100") BigDecimal percentual,
+            @DecimalMin("0") BigDecimal valor,
+            BigDecimal valorBruto, BigDecimal desconto, BigDecimal valorLiquido) {
+    }
+
+    /**
+     * PLR. Entrada (PUT): {@code ativo} (null = mantém) e {@code parcelas} (null/vazia ao ativar = padrão set 50% + mar 50%).
+     * {@code estimativaAnual} é o PLR anual do cargo do perfil (só leitura).
+     */
+    public record PlrDto(Boolean ativo, @Valid List<ParcelaPlrDto> parcelas, BigDecimal totalPercentual, String aviso,
                          BigDecimal estimativaAnual) {
     }
 

@@ -98,7 +98,7 @@ public class UsuarioController {
 
     @PutMapping("/plr")
     public PlrDto atualizarPlr(@Valid @RequestBody PlrDto d) {
-        return plr.substituir(d.parcelas());
+        return plr.substituir(d.ativo(), d.parcelas());
     }
 
     @PostMapping("/plr/parcelas")
