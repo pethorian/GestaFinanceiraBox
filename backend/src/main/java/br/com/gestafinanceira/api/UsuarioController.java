@@ -18,6 +18,10 @@ import br.com.gestafinanceira.application.LancamentoService;
 import br.com.gestafinanceira.application.MetaService;
 import br.com.gestafinanceira.application.PerfilService;
 import br.com.gestafinanceira.application.PlrService;
+import br.com.gestafinanceira.application.SaudeFinanceiraService;
+import br.com.gestafinanceira.api.dto.Dtos.GrupoDto;
+import br.com.gestafinanceira.api.dto.Dtos.ParticipaDto;
+import br.com.gestafinanceira.api.dto.Dtos.SaudeFinanceiraDto;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.YearMonth;
@@ -43,9 +47,12 @@ public class UsuarioController {
     private final MetaService metas;
     private final DadosService dados;
     private final PlrService plr;
+    private final SaudeFinanceiraService saude;
 
     public UsuarioController(PerfilService perfil, LancamentoService lancamentos, DecimoService decimo,
-                             MetaService metas, DadosService dados, PlrService plr) {
+                             MetaService metas, DadosService dados, PlrService plr,
+                             SaudeFinanceiraService saude) {
+        this.saude = saude;
         this.plr = plr;
         this.perfil = perfil;
         this.lancamentos = lancamentos;
@@ -162,6 +169,22 @@ public class UsuarioController {
     public ResponseEntity<Void> removerCategoria(@PathVariable String nome) {
         lancamentos.removerCategoria(nome);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/categorias/{nome}/grupo")
+    public CategoriaDto atualizarGrupoCategoria(@PathVariable String nome, @Valid @RequestBody GrupoDto d) {
+        return lancamentos.atualizarGrupo(nome, d.grupo());
+    }
+
+    // saúde financeira (método 50/30/20)
+    @GetMapping("/saude-financeira")
+    public SaudeFinanceiraDto saudeFinanceira() {
+        return saude.buscar();
+    }
+
+    @PutMapping("/saude-financeira")
+    public SaudeFinanceiraDto atualizarSaudeFinanceira(@Valid @RequestBody ParticipaDto d) {
+        return saude.definirParticipacao(d.participa());
     }
 
     // metas

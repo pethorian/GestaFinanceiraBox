@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api } from '../api/api'
 import { ApiError } from '../api/http'
 import type {
-  Bonus, Categoria, Dados, Ferias, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
+  Bonus, Categoria, Dados, Ferias, GrupoGasto, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos,
 } from '../domain/types'
 
@@ -37,6 +37,10 @@ interface AppCtx {
   editarMeta: (id: number, patch: Partial<MetaEntrada>) => void
   removerMeta: (id: number) => Promise<void>
   restaurar: () => Promise<void>
+  /** adere (ou não) ao método 50/30/20 da aba Saúde financeira */
+  alternarMetodo: (participa: boolean) => Promise<void>
+  /** classifica a categoria como obrigatória (NECESSIDADE) ou lazer (DESEJO) e recalcula a saúde financeira */
+  definirGrupoCategoria: (nome: string, grupo: GrupoGasto) => Promise<void>
   /** grava alterações de parâmetros e recarrega tudo (as projeções dependem deles) */
   salvarParametros: (op: () => Promise<unknown>) => Promise<void>
 }
@@ -87,14 +91,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** Pede ao back end a projeção e os resumos atualizados (ignora respostas antigas). */
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
-    const [projecao, mesComum, resumoGastos, plr] = await Promise.all([
-      api.projecao(), api.mesComum(), api.resumoGastos(), api.plr(),
+    const [projecao, mesComum, resumoGastos, plr, saudeFinanceira] = await Promise.all([
+      api.projecao(), api.mesComum(), api.resumoGastos(), api.plr(), api.saudeFinanceira(),
     ])
     if (minha === seqCalculos.current) {
-      // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela
+      // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela.
+      // A saúde financeira depende da renda, dos gastos e dos aportes: volta inteira do servidor.
       setCarga((c) => (c ? {
         ...c, projecao, mesComum, resumoGastos,
-        dados: { ...c.dados, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual } },
+        dados: { ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual } },
       } : c))
     }
   }, [])
@@ -224,6 +229,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     removerMeta: (id: number) => executar(async () => {
       await api.removerMeta(id)
       mudar((d) => ({ ...d, metas: d.metas.filter((m) => m.id !== id) }))
+    }),
+
+    alternarMetodo: (participa: boolean) => executar(async () => {
+      mudar((d) => ({ ...d, saudeFinanceira: { ...d.saudeFinanceira, participa } }))
+      const saudeFinanceira = await api.salvarSaudeFinanceira(participa)
+      mudar((d) => ({ ...d, saudeFinanceira }))
+    }),
+    definirGrupoCategoria: (nome: string, grupo: GrupoGasto) => executar(async () => {
+      // otimista: o controle muda na hora; os números chegam do back end no recálculo (executar → recalcular)
+      setCarga((c) => (c ? {
+        ...c,
+        categorias: c.categorias.map((k) => (k.nome === nome ? { ...k, grupo } : k)),
+        dados: {
+          ...c.dados,
+          saudeFinanceira: {
+            ...c.dados.saudeFinanceira,
+            categorias: c.dados.saudeFinanceira.categorias.map((k) => (k.nome === nome ? { ...k, grupo } : k)),
+          },
+        },
+      } : c))
+      const salva: Categoria = await api.salvarGrupoCategoria(nome, grupo)
+      setCarga((c) => (c ? { ...c, categorias: c.categorias.map((k) => (k.nome === nome ? { ...k, ...salva } : k)) } : c))
     }),
 
     salvarParametros: async (op: () => Promise<unknown>) => {

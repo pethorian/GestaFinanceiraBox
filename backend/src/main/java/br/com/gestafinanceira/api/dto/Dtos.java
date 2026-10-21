@@ -1,6 +1,9 @@
 package br.com.gestafinanceira.api.dto;
 
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
+import br.com.gestafinanceira.domain.calculo.saude.Faixas;
+import br.com.gestafinanceira.domain.calculo.saude.StatusFaixa;
+import br.com.gestafinanceira.domain.modelo.GrupoGasto;
 import br.com.gestafinanceira.domain.modelo.Saude;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import jakarta.validation.Valid;
@@ -60,7 +63,7 @@ public final class Dtos {
             @Min(0) int parcelas) {
     }
 
-    public record CategoriaDto(@NotBlank @Size(max = 60) String nome, int ordem) {
+    public record CategoriaDto(@NotBlank @Size(max = 60) String nome, int ordem, GrupoGasto grupo) {
     }
 
     // ---- 13º ----------------------------------------------------------------------------------
@@ -232,11 +235,29 @@ public final class Dtos {
             @NotNull @DecimalMin("0") BigDecimal bonusCaixaMaxSalarios) {
     }
 
+    // ---- saúde financeira (método 50/30/20) ---------------------------------------------------
+
+    public record ParticipaDto(@NotNull Boolean participa) {
+    }
+
+    public record GrupoDto(@NotNull GrupoGasto grupo) {
+    }
+
+    public record CategoriaSaudeDto(String nome, GrupoGasto grupo, BigDecimal mediaMensal) {
+    }
+
+    public record SaudeFinanceiraDto(
+            boolean participa, BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
+            Faixas<BigDecimal> percentuais, Faixas<BigDecimal> diferenca, Faixas<StatusFaixa> status,
+            BigDecimal sobraLivre, BigDecimal aporteSugerido, List<CategoriaSaudeDto> categorias,
+            List<String> diagnostico) {
+    }
+
     // ---- agregado -----------------------------------------------------------------------------
 
     public record DadosDto(
             PerfilDto perfil, FeriasDto ferias, List<LancamentoDto> lancamentos,
-            DecimoDto decimo, List<MetaDto> metas, BonusDto bonus, PlrDto plr) {
+            DecimoDto decimo, List<MetaDto> metas, BonusDto bonus, PlrDto plr, SaudeFinanceiraDto saudeFinanceira) {
     }
 
     public record ErroDto(int status, String erro, String mensagem, List<String> detalhes) {

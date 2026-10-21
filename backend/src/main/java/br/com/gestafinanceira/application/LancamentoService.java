@@ -8,6 +8,7 @@ import br.com.gestafinanceira.api.dto.Dtos.LancamentoDto;
 import br.com.gestafinanceira.application.Erros.NaoEncontrado;
 import br.com.gestafinanceira.application.Erros.RegraDeNegocio;
 import br.com.gestafinanceira.domain.modelo.GastoCalculo;
+import br.com.gestafinanceira.domain.modelo.GrupoGasto;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Categoria;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Lancamento;
@@ -103,6 +104,7 @@ public class LancamentoService {
     /** Lançamentos padrão, com início relativo ao mês atual (equivale a dadosIniciais() do frontend). */
     public void restaurarPadrao() {
         removerTodos();
+        regruparCategoriasPadrao();
         YearMonth m = YearMonth.now(clock);
         criarPadrao("Aluguel", "Moradia", TipoLancamento.RECORRENTE, 2200, m, 0);
         criarPadrao("Condomínio e contas", "Casa", TipoLancamento.RECORRENTE, 850, m, 0);
@@ -142,7 +144,7 @@ public class LancamentoService {
     @Transactional(readOnly = true)
     public List<CategoriaDto> listarCategorias() {
         return categorias.findAllByOrderByOrdemAscNomeAsc().stream()
-                .map(c -> new CategoriaDto(c.nome, c.ordem)).toList();
+                .map(c -> new CategoriaDto(c.nome, c.ordem, c.grupo)).toList();
     }
 
     public CategoriaDto criarCategoria(CategoriaDto d) {
@@ -152,8 +154,33 @@ public class LancamentoService {
         Categoria c = new Categoria();
         c.nome = nome;
         c.ordem = d.ordem() > 0 ? d.ordem() : (int) categorias.count() + 1;
+        c.grupo = d.grupo() != null ? d.grupo() : GrupoGasto.NECESSIDADE;
         categorias.save(c);
-        return new CategoriaDto(c.nome, c.ordem);
+        return new CategoriaDto(c.nome, c.ordem, c.grupo);
+    }
+
+    /** Grupo 50/30/20 de cada categoria do seed (V10); as demais (criadas pelo usuário) são NECESSIDADE. */
+    static GrupoGasto grupoPadrao(String nome) {
+        return switch (nome) {
+            case "Pessoal", "Lazer", "Outros" -> GrupoGasto.DESEJO;
+            default -> GrupoGasto.NECESSIDADE;
+        };
+    }
+
+    /** Volta o grupo de todas as categorias ao mapeamento padrão. */
+    private void regruparCategoriasPadrao() {
+        for (Categoria c : categorias.findAll()) {
+            c.grupo = grupoPadrao(c.nome);
+            categorias.save(c);
+        }
+    }
+
+    public CategoriaDto atualizarGrupo(String nome, GrupoGasto grupo) {
+        Categoria c = categorias.findById(nome)
+                .orElseThrow(() -> new NaoEncontrado("Categoria '" + nome + "' não encontrada."));
+        c.grupo = grupo;
+        categorias.save(c);
+        return new CategoriaDto(c.nome, c.ordem, c.grupo);
     }
 
     public void removerCategoria(String nome) {

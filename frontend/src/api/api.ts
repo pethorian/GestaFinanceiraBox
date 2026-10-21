@@ -1,6 +1,6 @@
 import { rotuloCompetencia } from '../domain/format'
 import type {
-  Beneficio, Bonus, Cargo, Categoria, Dados, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
+  Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
 } from '../domain/types'
 import { http } from './http'
@@ -20,6 +20,13 @@ export const api = {
 
   parametros: () => http.get<ParametrosVigentes>('/api/parametros/vigentes'),
   categorias: () => http.get<Categoria[]>('/api/categorias'),
+  /** NECESSIDADE (obrigatório) ou DESEJO (lazer); depois recarregue a saúde financeira */
+  salvarGrupoCategoria: (nome: string, grupo: GrupoGasto) =>
+    http.put<Categoria>(`/api/categorias/${encodeURIComponent(nome)}/grupo`, { grupo }),
+
+  // saúde financeira (método 50/30/20)
+  saudeFinanceira: () => http.get<SaudeFinanceira>('/api/saude-financeira'),
+  salvarSaudeFinanceira: (participa: boolean) => http.put<SaudeFinanceira>('/api/saude-financeira', { participa }),
   resumoGastos: () => http.get<ResumoGastos>('/api/lancamentos/resumo'),
 
   // parâmetros (tabelas com vigência)

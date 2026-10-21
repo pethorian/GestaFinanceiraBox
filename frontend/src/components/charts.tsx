@@ -6,18 +6,18 @@ import { cls } from './ui'
 const P = { l: 46, r: 10, t: 30, b: 28 }
 
 /** Mede o contêiner para o SVG ocupar exatamente o espaço disponível. */
-function useSize(minH: number) {
+export function useSize(minH: number, minW = 300) {
   const ref = useRef<HTMLDivElement>(null)
   const [s, setS] = useState({ w: 720, h: 260 })
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    const medir = () => setS({ w: Math.max(300, el.clientWidth), h: Math.max(minH, el.clientHeight) })
+    const medir = () => setS({ w: Math.max(minW, el.clientWidth), h: Math.max(minH, el.clientHeight) })
     medir()
     const ro = new ResizeObserver(medir)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [minH])
+  }, [minH, minW])
   return [ref, s] as const
 }
 

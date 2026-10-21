@@ -6,6 +6,7 @@ interface Rota { to: string; label: string; icon: IconName }
 
 export const ROTAS: Rota[] = [
   { to: '/', label: 'Projeção', icon: 'chart' },
+  { to: '/saude', label: 'Saúde financeira', icon: 'pulse' },
   { to: '/perfil', label: 'Meu perfil', icon: 'user' },
   { to: '/gastos', label: 'Gastos mensais', icon: 'receipt' },
   { to: '/decimo', label: '13º, férias e PLR', icon: 'gift' },
@@ -27,11 +28,11 @@ function Sidebar() {
         <div><b>Gestão Financeira</b><small>Box</small></div>
       </div>
       <div className="nl">Visão geral</div>
-      {link(ROTAS[0])}
+      {ROTAS.slice(0, 2).map(link)}
       <div className="nl">Meus dados</div>
-      {ROTAS.slice(1, 5).map(link)}
+      {ROTAS.slice(2, 6).map(link)}
       <div className="sp" />
-      {link(ROTAS[5])}
+      {link(ROTAS[6])}
       <div className="user">
         <div className="av">VC</div>
         <div><b>Você</b><small>Instalação local</small></div>

@@ -102,11 +102,52 @@ export interface Dados {
   bonus: Bonus
   plr: Plr
   metas: Meta[]
+  /** método 50/30/20, calculado pelo back end (sempre, mesmo sem adesão) */
+  saudeFinanceira: SaudeFinanceira
 }
+
+/** NECESSIDADE = gasto obrigatório (faixa dos 50%); DESEJO = lazer (faixa dos 30%) */
+export type GrupoGasto = 'NECESSIDADE' | 'DESEJO'
 
 export interface Categoria {
   nome: string
   ordem: number
+  grupo: GrupoGasto
+}
+
+/** Faixas do método 50/30/20. */
+export type FaixaMetodo = 'necessidades' | 'desejos' | 'poupanca'
+export type Faixas<T> = Record<FaixaMetodo, T>
+/** OK; ACIMA = alerta em necessidades/desejos; ABAIXO = alerta na poupança */
+export type StatusFaixa = 'OK' | 'ACIMA' | 'ABAIXO'
+
+export interface CategoriaSaude {
+  nome: string
+  grupo: GrupoGasto
+  mediaMensal: number
+}
+
+/** Saúde financeira pelo método 50/30/20. Todos os números vêm prontos do back end. */
+export interface SaudeFinanceira {
+  /** o usuário aderiu ao método (o cálculo é feito de qualquer forma) */
+  participa: boolean
+  /** líquido de um mês comum */
+  rendaMensal: number
+  recomendado: Faixas<number>
+  atual: Faixas<number>
+  /** % da renda com 1 casa; null se a renda é ≤ 0 */
+  percentuais: Faixas<number> | null
+  /** atual − recomendado, por faixa */
+  diferenca: Faixas<number>
+  /** necessidades/desejos: OK | ACIMA; poupança: OK | ABAIXO */
+  status: Faixas<StatusFaixa>
+  /** renda − necessidades − desejos − poupança (negativa se passa da renda) */
+  sobraLivre: number
+  /** quanto falta aportar por mês para chegar aos 20% */
+  aporteSugerido: number
+  /** todas as categorias, na ordem de cadastro (média 0 se não há gasto) */
+  categorias: CategoriaSaude[]
+  diagnostico: string[]
 }
 
 export interface DetalheIrpf {
