@@ -371,12 +371,6 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.aviso", notNullValue()));
         // 13º intacto: gravar PLR não apaga as parcelas do 13º
         mvc.perform(get("/api/decimo")).andExpect(jsonPath("$.parcelas", hasSize(2)));
-        mvc.perform(post("/api/plr/parcelas")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.parcelas", hasSize(2)))
-                .andExpect(jsonPath("$.parcelas[1].mes", is(12)))
-                .andExpect(jsonPath("$.parcelas[1].percentual", is(60)))
-                .andExpect(jsonPath("$.totalPercentual", is(100)));
-        mvc.perform(post("/api/plr/parcelas")).andExpect(status().isUnprocessableEntity());
         // ativar sem informar parcelas (lista vazia) volta às padrão
         json(put("/api/plr"), """
                 {"ativo": true, "parcelas": []}""").andExpect(status().isOk())

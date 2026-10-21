@@ -101,11 +101,6 @@ public class UsuarioController {
         return plr.substituir(d.ativo(), d.parcelas());
     }
 
-    @PostMapping("/plr/parcelas")
-    public PlrDto novaParcelaPlr() {
-        return plr.adicionarParcela();
-    }
-
     // bônus Caixa
     @GetMapping("/bonus")
     public BonusDto bonus() {

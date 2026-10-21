@@ -78,19 +78,6 @@ public class PlrService {
         return buscar();
     }
 
-    /** Acrescenta uma parcela com o que falta para 100%, no último mês livre do ano (dezembro para trás). */
-    public PlrDto adicionarParcela() {
-        List<ParcelaPlr> atuais = new ArrayList<>(listar());
-        BigDecimal falta = CEM.subtract(soma(atuais));
-        if (falta.signum() <= 0) throw new RegraDeNegocio("O PLR já está 100% distribuído.");
-        int mes = 12;
-        while (mes > 1 && usado(atuais, mes)) mes--;
-        if (usado(atuais, mes)) throw new RegraDeNegocio("Todos os meses já têm parcela do PLR.");
-        atuais.add(new ParcelaPlr(mes, falta));
-        gravar(atuais);
-        return buscar();
-    }
-
     /** Parcelas para o cálculo da projeção: vazio quando o PLR está inativo. */
     @Transactional(readOnly = true)
     public List<ParcelaPlr> paraCalculo() {
