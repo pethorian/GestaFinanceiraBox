@@ -5,6 +5,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Não lançado]
 
 ### Adicionado
+- Aba "Saúde financeira" com o método 50/30/20 opcional: compara necessidades, desejos e poupança com a renda líquida, classifica cada categoria como obrigatória ou lazer, sugere quanto guardar em Metas e reserva e mostra gráficos.
+- Metas e reservas: o aporte mensal sai do saldo disponível de cada mês até a meta atingir o alvo; a projeção mostra o valor guardado em metas e o patrimônio (disponível + guardado).
+- Banco onde o dinheiro de cada meta está guardado (texto livre).
+- Opção de contar ou não o 13º na projeção, com parcelas fixas em fevereiro e novembro (50% cada).
+- Aviso ao tentar ativar o Bônus Caixa com cargo que não é de 8 horas.
 - Aba "Gastos mensais": gasto de uma vez só some sozinho depois que o mês passa (exclusão lógica, os dados ficam no banco); exclusões do usuário também são lógicas.
 - Campos numéricos com visual próprio, sem os botões nativos do navegador.
 - Nome do usuário no perfil (opcional, até 60 caracteres); a tela de Projeção passa a saudar pelo nome.
@@ -12,7 +17,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - IR sobre o PLR em tributação exclusiva (tabela própria com vigência): setembro isento e março com os descontos.
 - Aviso para não contar com o dinheiro do PLR ao ativá-lo e no detalhe do mês da projeção.
 
+### Alterado
+- Previsão de conclusão das metas passa a ser o mês do último aporte.
+- Dropdowns com visual único em todas as telas.
+
+### Corrigido
+- Barra da média por categoria volta a aparecer em Gastos mensais.
+
 ### Removido
+- Parcelas editáveis do 13º e o endpoint `POST /api/decimo/parcelas`.
 - Categoria "Reserva" dos gastos (a reserva fica na aba Metas); gastos que a usavam foram para "Outros".
 
 ## [0.1.0-beta.1] - 2026-10-20
