@@ -42,9 +42,10 @@ export interface ParcelaDecimo {
 }
 
 export interface Decimo {
+  ativo: boolean
+  /** parcelas fixas (somente leitura): fevereiro 50% e novembro 50% */
   parcelas: ParcelaDecimo[]
   totalPercentual: number
-  aviso: string | null
 }
 
 export interface Bonus {
