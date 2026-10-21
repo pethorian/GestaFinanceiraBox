@@ -1,5 +1,5 @@
+import { useState } from 'react'
 import { AvisoPlr } from '../components/AvisoPlr'
-import { Icon } from '../components/Icon'
 import { Card, Field, NumberInput, Page, Switch } from '../components/ui'
 import { fmt, MES_LONGO } from '../domain/format'
 import type { ParcelaPlr } from '../domain/types'
@@ -10,42 +10,35 @@ const OPCOES_MES = MES_LONGO.map((n, i) => <option key={n} value={i + 1}>{n}</op
 
 export function Decimo() {
   const {
-    dados, parametros, editarDecimo, adicionarParcelaDecimo, editarFerias,
+    dados, parametros, alternarDecimo, editarFerias,
     alternarPlr, editarPlr, editarBonus,
   } = useApp()
   const { decimo, ferias, plr, bonus } = dados
-  const { parcelas } = decimo
+  const [tentouBonus, setTentouBonus] = useState(false)
   const cargo = parametros.cargos.find((c) => c.id === dados.perfil.cargoId)
-  const bonusIndisponivel = cargo?.jornada === 6
+  const bonusIndisponivel = cargo != null && cargo.jornada !== 8
   const maxSalariosBonus = parametros.beneficios.bonusCaixaMaxSalarios
 
-  const editar = (i: number, patch: Partial<{ mes: number; percentual: number }>) =>
-    editarDecimo(parcelas.map((e, k) => (k === i ? { ...e, ...patch } : e)))
+  const alternarBonus = (v: boolean) => {
+    // a regra de quem recebe é do back end; aqui só se avisa antes de tentar
+    if (v && bonusIndisponivel) { setTentouBonus(true); return }
+    setTentouBonus(false)
+    editarBonus({ ativo: v })
+  }
   const editarParcelaPlr = (i: number, patch: Partial<Pick<ParcelaPlr, 'mes' | 'percentual' | 'valor'>>) =>
     editarPlr(plr.parcelas.map((e, k) => (k === i ? { ...e, ...patch } : e)))
 
   return (
-    <Page title="13º, férias, PLR e bônus" subtitle="Defina quando cada parcela cai. INSS e IR do 13º são tratados à parte.">
+    <Page title="13º, férias, PLR e bônus" subtitle="Escolha o que entra na projeção. INSS e IR do 13º são tratados à parte.">
       <div className="dgrid">
         <Card>
           <h2>13º salário</h2>
-          <table>
-            <thead><tr><th>Mês</th><th>% do 13º</th><th /></tr></thead>
-            <tbody>
-              {parcelas.map((e, i) => (
-                <tr key={i}>
-                  <td><select value={e.mes} aria-label="Mês" onChange={(ev) => editar(i, { mes: Number(ev.target.value) })}>{OPCOES_MES}</select></td>
-                  <td><NumberInput min={1} max={100} value={e.percentual} style={{ width: 90 }} aria-label="Percentual" onChange={(v) => editar(i, { percentual: v })} /></td>
-                  <td><button className="btn x" aria-label="Remover parcela" onClick={() => editarDecimo(parcelas.filter((_, k) => k !== i))}><Icon name="close" size={14} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ marginTop: 10 }}>
-            <button className="btn" onClick={() => void adicionarParcelaDecimo()}>+ Parcela</button>
-          </div>
-          {/* soma e aviso são validados e devolvidos pelo back end */}
-          {decimo.aviso ? <div className="warn">{decimo.aviso}</div> : <div className="ok">✓ {decimo.totalPercentual}% distribuído.</div>}
+          <Switch title="Contar com o 13º na projeção" checked={decimo.ativo} onChange={(v) => void alternarDecimo(v)} />
+          {decimo.ativo && (
+            <p className="sub" style={{ margin: '10px 0 0' }}>
+              {decimo.parcelas.map((p) => `${MES_LONGO[p.mes - 1]} ${p.percentual}%`).join(' · ')}
+            </p>
+          )}
         </Card>
 
         <Card>
@@ -65,20 +58,20 @@ export function Decimo() {
 
         <Card>
           <h2>Bônus Caixa</h2>
-          {bonusIndisponivel && <p className="sub">Disponível apenas para carreiras de 8 horas</p>}
-          <fieldset disabled={bonusIndisponivel} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-            <Switch title="Receber bônus" hint="Pago em um mês, em quantidade de salários" checked={bonus.ativo && !bonusIndisponivel} onChange={(v) => editarBonus({ ativo: v })} />
-            {bonus.ativo && !bonusIndisponivel && (
-              <div className="row2" style={{ marginTop: 12 }}>
-                <Field label="Mês do bônus">
-                  <select value={bonus.mes} onChange={(e) => editarBonus({ mes: Number(e.target.value) })}>{OPCOES_MES}</select>
-                </Field>
-                <Field label="Quantidade de salários" hint={`De 0 a ${maxSalariosBonus}`}>
-                  <NumberInput min={0} max={maxSalariosBonus} step={0.5} value={bonus.salarios} onChange={(v) => editarBonus({ salarios: v })} />
-                </Field>
-              </div>
-            )}
-          </fieldset>
+          <Switch title="Receber bônus" hint="Pago em um mês, em quantidade de salários" checked={bonus.ativo && !bonusIndisponivel} onChange={alternarBonus} />
+          {bonusIndisponivel && tentouBonus && (
+            <div className="warn">Você não pode receber o Bônus Caixa: seu cargo cadastrado não é de 8 horas. Altere o cargo em Meu perfil se isso estiver errado.</div>
+          )}
+          {bonus.ativo && !bonusIndisponivel && (
+            <div className="row2" style={{ marginTop: 12 }}>
+              <Field label="Mês do bônus">
+                <select value={bonus.mes} onChange={(e) => editarBonus({ mes: Number(e.target.value) })}>{OPCOES_MES}</select>
+              </Field>
+              <Field label="Quantidade de salários" hint={`De 0 a ${maxSalariosBonus}`}>
+                <NumberInput min={0} max={maxSalariosBonus} step={0.5} value={bonus.salarios} onChange={(v) => editarBonus({ salarios: v })} />
+              </Field>
+            </div>
+          )}
         </Card>
 
         <Card>
@@ -110,7 +103,7 @@ export function Decimo() {
                       </td>
                       <td>{fmt(e.valorBruto)}</td>
                       <td>{fmt(e.desconto)}</td>
-                      <td>{fmt(e.valorLiquido)}</td>
+                      <td>{fmt(e.valorLiquido)}</td>
                     </tr>
                   ))}
                 </tbody>

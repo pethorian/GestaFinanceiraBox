@@ -3,7 +3,7 @@ import { api } from '../api/api'
 import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
-  ParcelaDecimo, ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos,
+  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos,
 } from '../domain/types'
 
 /**
@@ -25,8 +25,7 @@ interface AppCtx {
 
   editarPerfil: (patch: Partial<Perfil>) => void
   editarFerias: (patch: Partial<Ferias>) => void
-  editarDecimo: (parcelas: ParcelaDecimo[]) => void
-  adicionarParcelaDecimo: () => Promise<void>
+  alternarDecimo: (ativo: boolean) => Promise<void>
   /** liga/desliga o PLR; ao ligar, o back end devolve as parcelas padrão */
   alternarPlr: (ativo: boolean) => Promise<void>
   editarPlr: (parcelas: ParcelaPlr[]) => void
@@ -141,16 +140,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mudar((d) => ({ ...d, ferias: { ...d.ferias, ...patch } }))
       agendar('ferias', () => api.salvarFerias(cargaRef.current!.dados.ferias))
     },
-    editarDecimo: (parcelas: ParcelaDecimo[]) => {
-      mudar((d) => ({ ...d, decimo: { ...d.decimo, parcelas } }))
-      agendar('decimo', async () => {
-        const salvo = await api.salvarDecimo(cargaRef.current!.dados.decimo.parcelas)
-        mudar((d) => ({ ...d, decimo: { ...d.decimo, totalPercentual: salvo.totalPercentual, aviso: salvo.aviso } }))
-      })
-    },
-
-    adicionarParcelaDecimo: () => executar(async () => {
-      const decimo = await api.novaParcelaDecimo()
+    alternarDecimo: (ativo: boolean) => executar(async () => {
+      mudar((d) => ({ ...d, decimo: { ...d.decimo, ativo } }))
+      const decimo = await api.salvarDecimo(ativo)
       mudar((d) => ({ ...d, decimo }))
     }),
 

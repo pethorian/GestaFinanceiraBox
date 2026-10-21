@@ -1,7 +1,7 @@
 import { rotuloCompetencia } from '../domain/format'
 import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
-  ParcelaDecimo, ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
+  ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas,
 } from '../domain/types'
 import { http } from './http'
 
@@ -30,8 +30,7 @@ export const api = {
 
   salvarPerfil: (p: Perfil) => http.put<Perfil>('/api/perfil', p),
   salvarFerias: (f: Ferias) => http.put<Ferias>('/api/ferias', f),
-  salvarDecimo: (parcelas: ParcelaDecimo[]) => http.put<Decimo>('/api/decimo', { parcelas }),
-  novaParcelaDecimo: () => http.post<Decimo>('/api/decimo/parcelas'),
+  salvarDecimo: (ativo: boolean) => http.put<Decimo>('/api/decimo', { ativo }),
   bonus: () => http.get<Bonus>('/api/bonus'),
   salvarBonus: (b: Bonus) => http.put<Bonus>('/api/bonus', b),
   plr: () => http.get<Plr>('/api/plr'),

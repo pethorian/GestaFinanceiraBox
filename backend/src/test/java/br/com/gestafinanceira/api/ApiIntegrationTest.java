@@ -119,18 +119,32 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void decimoValidaSomaEMesesRepetidos() throws Exception {
+    void decimoFixoComFlagAtivo() throws Exception {
         mvc.perform(get("/api/decimo")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.parcelas", hasSize(2))).andExpect(jsonPath("$.totalPercentual", is(100.0)));
+                .andExpect(jsonPath("$.ativo", is(true)))
+                .andExpect(jsonPath("$.parcelas", hasSize(2)))
+                .andExpect(jsonPath("$.parcelas[0].mes", is(2)))
+                .andExpect(jsonPath("$.parcelas[0].percentual", is(50)))
+                .andExpect(jsonPath("$.parcelas[1].mes", is(11)))
+                .andExpect(jsonPath("$.parcelas[1].percentual", is(50)))
+                .andExpect(jsonPath("$.totalPercentual", is(100)));
+        // PUT aceita só { ativo }; parcelas enviadas são ignoradas e continuam fixas
         json(put("/api/decimo"), """
-                {"parcelas": [{"mes": 2, "percentual": 60}, {"mes": 11, "percentual": 60}]}""")
-                .andExpect(status().isUnprocessableEntity());
+                {"ativo": false, "parcelas": [{"mes": 12, "percentual": 40}]}""").andExpect(status().isOk())
+                .andExpect(jsonPath("$.ativo", is(false)))
+                .andExpect(jsonPath("$.parcelas", hasSize(2)));
+        mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.meses[3].decimo", is(0.0)))
+                .andExpect(jsonPath("$.meses[0].decimo", is(0.0)))
+                .andExpect(jsonPath("$.meses[0].descontoDecimo", is(0.0)));
+        json(put("/api/decimo"), "{}").andExpect(status().isBadRequest());
         json(put("/api/decimo"), """
-                {"parcelas": [{"mes": 2, "percentual": 30}, {"mes": 2, "percentual": 30}]}""")
-                .andExpect(status().isUnprocessableEntity());
-        json(put("/api/decimo"), """
-                {"parcelas": [{"mes": 12, "percentual": 40}]}""").andExpect(status().isOk())
-                .andExpect(jsonPath("$.aviso", notNullValue()));
+                {"ativo": true}""").andExpect(status().isOk()).andExpect(jsonPath("$.ativo", is(true)));
+        mvc.perform(get("/api/projecao?inicio=2026-11")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.meses[3].decimo", greaterThan(0.0)))
+                .andExpect(jsonPath("$.meses[0].decimo", greaterThan(0.0)));
+        // endpoint removido
+        mvc.perform(post("/api/decimo/parcelas")).andExpect(status().is(org.hamcrest.Matchers.anyOf(org.hamcrest.Matchers.is(404), org.hamcrest.Matchers.is(405))));
     }
 
     @Test
@@ -247,6 +261,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.lancamentos", hasSize(7)))
                 .andExpect(jsonPath("$.metas", hasSize(3)))
                 .andExpect(jsonPath("$.decimo.parcelas", hasSize(2)))
+                .andExpect(jsonPath("$.decimo.ativo", is(true)))
                 .andExpect(jsonPath("$.plr.ativo", is(false)))
                 .andExpect(jsonPath("$.plr.parcelas", hasSize(2)))
                 .andExpect(jsonPath("$.bonus.ativo", is(false)));
@@ -275,15 +290,6 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.descricao", is("Novo gasto"))).andExpect(jsonPath("$.tipo", is("RECORRENTE")));
         mvc.perform(post("/api/metas/novo")).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nome", is("Nova meta"))).andExpect(jsonPath("$.mesesParaAtingir", is(20)));
-        // 13º já está 100% distribuído: o servidor recusa nova parcela
-        mvc.perform(post("/api/decimo/parcelas")).andExpect(status().isUnprocessableEntity());
-        json(put("/api/decimo"), """
-                {"parcelas": [{"mes": 12, "percentual": 40}]}""").andExpect(status().isOk());
-        mvc.perform(post("/api/decimo/parcelas")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.parcelas", hasSize(2)))
-                .andExpect(jsonPath("$.parcelas[0].mes", is(11)))
-                .andExpect(jsonPath("$.parcelas[0].percentual", is(60)))
-                .andExpect(jsonPath("$.totalPercentual", is(100)));
     }
 
     @Test

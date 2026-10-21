@@ -213,4 +213,16 @@ class MotorCalculoTest {
         assertThat(jul.ferias()).isEqualByComparingTo("1904.92"); // 8100: 2700 - dINSS - dIRPF (líquido, planilha)
         assertThat(meses.get(0).evento()).isEmpty();
     }
+
+    @Test
+    void decimoInativoNaoGeraValorNemDescontoEmNenhumMes() {
+        // 13º inativo: o serviço entrega lista vazia ao motor
+        DadosProjecao dados = new DadosProjecao(perfil(new Ferias(false, 7, false)), List.of(), List.of());
+        List<MesProjecao> meses = ProjetorMensal.projetar(dados, YearMonth.of(2026, 10), m -> pm(ASSISTENTE, "0"));
+        for (MesProjecao m : meses) {
+            assertThat(m.decimo()).isEqualByComparingTo("0");
+            assertThat(m.descontoDecimo()).isEqualByComparingTo("0");
+            assertThat(m.evento()).doesNotContain("13º");
+        }
+    }
 }

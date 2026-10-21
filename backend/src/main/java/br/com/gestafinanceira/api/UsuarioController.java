@@ -3,6 +3,7 @@ package br.com.gestafinanceira.api;
 import br.com.gestafinanceira.api.dto.Dtos.BonusDto;
 import br.com.gestafinanceira.api.dto.Dtos.CategoriaDto;
 import br.com.gestafinanceira.api.dto.Dtos.DadosDto;
+import br.com.gestafinanceira.api.dto.Dtos.DecimoAtivoDto;
 import br.com.gestafinanceira.api.dto.Dtos.DecimoDto;
 import br.com.gestafinanceira.api.dto.Dtos.FeriasDto;
 import br.com.gestafinanceira.api.dto.Dtos.LancamentoDto;
@@ -80,14 +81,9 @@ public class UsuarioController {
         return decimo.buscar();
     }
 
-    @PostMapping("/decimo/parcelas")
-    public DecimoDto novaParcelaDecimo() {
-        return decimo.adicionarParcela();
-    }
-
     @PutMapping("/decimo")
-    public DecimoDto atualizarDecimo(@Valid @RequestBody DecimoDto d) {
-        return decimo.substituir(d.parcelas());
+    public DecimoDto atualizarDecimo(@Valid @RequestBody DecimoAtivoDto d) {
+        return decimo.definirAtivo(d.ativo());
     }
 
     // PLR
