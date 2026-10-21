@@ -72,7 +72,8 @@ public class ProjecaoService {
                 meses.stream().filter(m -> m.sobra().signum() < 0).map(MesProjecao::competencia).toList(),
                 meses.stream().map(m -> m.sobra().abs()).max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO),
                 Dinheiro.arredondar(soma.apply(MesProjecao::aportes)), guardadoInicial, ultimo.guardado(),
-                ultimo.patrimonio());
+                ultimo.patrimonio(), Dinheiro.arredondar(p.saldoFuncef), ultimo.previdencia(),
+                ultimo.patrimonioTotal());
         return new ProjecaoDto(ini, p.saldoInicial, meses, resumo);
     }
 
@@ -95,7 +96,7 @@ public class ProjecaoService {
         PerfilCalculo pc = new PerfilCalculo(p.delta, p.diasSobreaviso, p.filhos, p.homeOffice, p.vrVa, p.saude,
                 p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial,
                 new Ferias(p.feriasAtivo, p.feriasMes, p.feriasAbono),
-                new Bonus(p.bonusAtivo, p.bonusMes, p.bonusSalarios));
+                new Bonus(p.bonusAtivo, p.bonusMes, p.bonusSalarios), p.saldoFuncef);
         return new DadosProjecao(pc, lancamentos.paraCalculo(), decimo.paraCalculo(), plr.paraCalculo(),
                 metas.paraCalculo());
     }

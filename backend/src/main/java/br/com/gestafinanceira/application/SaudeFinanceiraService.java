@@ -2,8 +2,10 @@ package br.com.gestafinanceira.application;
 
 import br.com.gestafinanceira.api.dto.Dtos.CategoriaResumoDto;
 import br.com.gestafinanceira.api.dto.Dtos.CategoriaSaudeDto;
+import br.com.gestafinanceira.api.dto.Dtos.PoupancaDetalhe;
 import br.com.gestafinanceira.api.dto.Dtos.SaudeFinanceiraDto;
 import br.com.gestafinanceira.domain.calculo.Dinheiro;
+import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
 import br.com.gestafinanceira.domain.calculo.projecao.ProjetorMensal;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020.Resultado;
@@ -24,8 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Saúde financeira (método 50/30/20). Sempre calcula, mesmo sem participação (a flag só registra a adesão).
- * Renda = líquido do "mês comum" do mês atual; gastos = médias mensais do resumo de lançamentos somadas por
- * grupo da categoria; poupança = média mensal dos aportes em metas nos 12 meses da projeção.
+ * Renda = líquido do "mês comum" do mês atual + contribuição FUNCEF do participante (que conta como poupança;
+ * a contrapartida da patrocinadora não entra, pois não é renda do usuário); gastos = médias mensais do resumo de lançamentos somadas por
+ * grupo da categoria; poupança = média mensal dos aportes em metas nos 12 meses da projeção + FUNCEF do mês comum.
  */
 @Service
 @Transactional
@@ -47,7 +50,10 @@ public class SaudeFinanceiraService {
 
     public SaudeFinanceiraDto buscar() {
         Perfil p = perfil.entidade();
-        BigDecimal renda = projecao.mesComum(null).liquido();
+        // A contribuição FUNCEF sai do líquido e volta como poupança: a renda de referência a soma de volta.
+        MesProjecao comum = projecao.mesComum(null);
+        BigDecimal funcef = comum.funcef();
+        BigDecimal renda = comum.liquido().add(funcef);
 
         Map<String, BigDecimal> medias = new HashMap<>();
         for (CategoriaResumoDto c : lancamentos.resumoPorCategoria(null).categorias()) {
@@ -74,9 +80,10 @@ public class SaudeFinanceiraService {
         BigDecimal poupanca = Dinheiro.arredondar(aportes.divide(BigDecimal.valueOf(ProjetorMensal.MESES), 10,
                 RoundingMode.HALF_UP));
 
-        Resultado r = Metodo503020.calcular(renda, necessidades, desejos, poupanca);
+        Resultado r = Metodo503020.calcular(renda, necessidades, desejos, poupanca, funcef);
         return new SaudeFinanceiraDto(p.metodo503020, r.rendaMensal(), r.recomendado(), r.atual(), r.percentuais(),
-                r.diferenca(), r.status(), r.sobraLivre(), r.aporteSugerido(), lista, r.diagnostico());
+                r.diferenca(), r.status(), r.sobraLivre(), r.aporteSugerido(), lista, r.diagnostico(),
+                new PoupancaDetalhe(r.poupancaDetalhe().metas(), r.poupancaDetalhe().funcef()));
     }
 
     public SaudeFinanceiraDto definirParticipacao(boolean participa) {

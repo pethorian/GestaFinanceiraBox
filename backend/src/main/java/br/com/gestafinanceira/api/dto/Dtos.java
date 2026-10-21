@@ -39,7 +39,8 @@ public final class Dtos {
             boolean valeTransporte,
             boolean sindicato,
             @NotNull BigDecimal saldoInicial,
-            @Size(max = 60) String nome) {
+            @Size(max = 60) String nome,
+            @DecimalMin("0") BigDecimal saldoFuncef) {
         /** Aparado antes da validação de tamanho; nulo (campo ausente) fica nulo e o serviço mantém o atual. */
         public PerfilDto {
             if (nome != null) {
@@ -160,6 +161,8 @@ public final class Dtos {
      * {@code sobra} (soma do período) já desconta os aportes; {@code saldoFinal} é o disponível em conta no último
      * mês. {@code aportes}: total aportado em metas no período; {@code guardadoInicial}/{@code guardadoFinal}: soma
      * dos saldos das metas hoje e ao fim do último mês; {@code patrimonioFinal} = saldoFinal + guardadoFinal.
+     * {@code previdenciaInicial}/{@code previdenciaFinal}: saldo FUNCEF hoje e ao fim do último mês;
+     * {@code patrimonioTotalFinal} = patrimonioFinal + previdenciaFinal.
      */
     public record ResumoProjecaoDto(
             BigDecimal receitas, BigDecimal descontos, BigDecimal liquido,
@@ -167,7 +170,8 @@ public final class Dtos {
             BigDecimal variacaoSaldo, BigDecimal sobraMedia, BigDecimal liquidoMedio, BigDecimal gastosMedio,
             DestaqueMesDto melhorMes, DestaqueMesDto piorMes, List<YearMonth> mesesNegativos,
             BigDecimal maiorSobraAbsoluta, BigDecimal aportes, BigDecimal guardadoInicial, BigDecimal guardadoFinal,
-            BigDecimal patrimonioFinal) {
+            BigDecimal patrimonioFinal, BigDecimal previdenciaInicial, BigDecimal previdenciaFinal,
+            BigDecimal patrimonioTotalFinal) {
     }
 
     public record CategoriaResumoDto(String categoria, BigDecimal mediaMensal) {
@@ -250,7 +254,11 @@ public final class Dtos {
             boolean participa, BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
             Faixas<BigDecimal> percentuais, Faixas<BigDecimal> diferenca, Faixas<StatusFaixa> status,
             BigDecimal sobraLivre, BigDecimal aporteSugerido, List<CategoriaSaudeDto> categorias,
-            List<String> diagnostico) {
+            List<String> diagnostico, PoupancaDetalhe poupancaDetalhe) {
+    }
+
+    /** Composição da poupança mensal: média dos aportes em metas e contribuição FUNCEF do participante. */
+    public record PoupancaDetalhe(BigDecimal metas, BigDecimal funcef) {
     }
 
     // ---- agregado -----------------------------------------------------------------------------
