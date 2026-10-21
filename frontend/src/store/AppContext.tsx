@@ -30,7 +30,6 @@ interface AppCtx {
   /** liga/desliga o PLR; ao ligar, o back end devolve as parcelas padrão */
   alternarPlr: (ativo: boolean) => Promise<void>
   editarPlr: (parcelas: ParcelaPlr[]) => void
-  adicionarParcelaPlr: () => Promise<void>
   editarBonus: (patch: Partial<Bonus>) => void
   adicionarLancamento: () => Promise<void>
   editarLancamento: (id: number, patch: Partial<Lancamento>) => void
@@ -182,10 +181,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }))
       })
     },
-    adicionarParcelaPlr: () => executar(async () => {
-      const plr = await api.novaParcelaPlr()
-      mudar((d) => ({ ...d, plr }))
-    }),
     editarBonus: (patch: Partial<Bonus>) => {
       mudar((d) => ({ ...d, bonus: { ...d.bonus, ...patch } }))
       agendar('bonus', () => api.salvarBonus(cargaRef.current!.dados.bonus))
