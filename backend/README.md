@@ -38,14 +38,14 @@ Erros: `400` validação, `404` não encontrado, `422` regra de negócio, `409` 
 |---|---|
 | Perfil | `GET/PUT /api/perfil` (campo `nome`: opcional, até 60 caracteres, aparado; vazio ou em branco grava `null`; PUT sem `nome` mantém o atual; excedeu → 400) |
 | Férias | `GET/PUT /api/ferias` |
-| 13º | `GET/PUT /api/decimo` (lista de `{mes, percentual}`; soma ≤ 100), `POST /api/decimo/parcelas` (acrescenta o que falta para 100%) |
+| 13º | `GET/PUT /api/decimo`: `GET` devolve `{ativo, parcelas:[{mes, percentual}], totalPercentual}` (parcelas fixas e somente leitura: fev 50% e nov 50%); `PUT` aceita apenas `{ativo}` (obrigatório). `POST /api/decimo/parcelas` e a edição de parcelas foram removidos (404/405) |
 | PLR | `GET/PUT /api/plr` (`{ativo, parcelas:[{mes, percentual, valor, valorBruto, desconto, valorLiquido}], totalPercentual, aviso, estimativaAnual}`; no PUT valem `ativo` (omitido mantém), `mes`, `percentual` e `valor` (bruto opcional); soma dos % ≤ 100, meses únicos; ativar sem parcelas grava as padrão set 50% + mar 50%) |
 | Bônus Caixa | `GET/PUT /api/bonus` (`{ativo, mes 1..12, salarios}`; só cargos de 8h, `salarios` ≤ máximo vigente) |
 | Gastos | `GET/POST /api/lancamentos`, `POST /api/lancamentos/novo` (linha padrão), `GET /api/lancamentos/resumo` (média por categoria), `GET/PUT/DELETE /api/lancamentos/{id}` (o DELETE é lógico: soft delete, ver abaixo) |
 | Categorias | `GET/POST /api/categorias`, `DELETE /api/categorias/{nome}` (`Reserva` não é categoria de gasto: a reserva fica em Metas; criar categoria ou gasto com esse nome retorna `422`) |
 | Metas | `GET/POST /api/metas`, `POST /api/metas/novo` (meta padrão), `GET/PUT/DELETE /api/metas/{id}` |
 | Projeção | `GET /api/projecao?inicio=AAAA-MM` (padrão: mês atual), `GET /api/projecao/mes-comum?mes=AAAA-MM` |
-| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com PLR inativo (parcelas set/mar 50%) e bônus inativo; mantém o `nome` do perfil; não toca nos parâmetros) |
+| Agregado | `GET /api/dados` (inclui `bonus` e `plr`), `POST /api/dados/restaurar` (volta ao padrão, com 13º ativo, PLR inativo (parcelas set/mar 50%) e bônus inativo; mantém o `nome` do perfil; não toca nos parâmetros) |
 | Vigentes | `GET /api/parametros/vigentes?data=` (cargos, deltas, INSS, IRPF e benefícios vigentes) |
 | Cargos | `GET /api/parametros/cargos?data=`, `POST`, `GET/PUT/DELETE /api/parametros/cargos/{id}` |
 | Deltas | `GET/PUT /api/parametros/deltas`, `DELETE /api/parametros/deltas/{inicio}` |
@@ -84,7 +84,7 @@ Regras do simulador reproduzidas pelo motor:
   (`PUT /api/bonus` e troca de cargo recusam com 422 nos demais). Padrão: inativo.
 - Cada mês da projeção traz `plr` (líquido), `plrBruto`, `plrDesconto` e `bonus` (0 quando não há); `evento` lista todos os eventos do mês unidos por " + " (ex.: "13º + PLR").
 - **Férias** (líquido, como na planilha): `terço = base/3`; `b2 = base + base/3`; `férias = terço − (INSS(b2) − INSS(base)) − (IRPF(b2) − IRPF(base))`, com IRPF de dedução fixa 607,20 (INSS e FUNCEF não deduzidos). O valor é a receita líquida do mês das férias (sem tributar de novo). Validado ao centavo nos 12 cargos. **Abono** (a planilha não modela): soma-se ao líquido mais base/3, isento — premissa do protótipo, a confirmar.
-- **13º**: as parcelas são pagas brutas (percentual × base). Na **última parcela do ano** desconta-se `INSS(total) + IR(total) + FUNCEF (pct × total) + Saúde Caixa sobre o total`, com `total` = soma das parcelas × base. Sem FUNCEF o IR deduz o INSS; **com FUNCEF o IR usa a dedução fixa de 607,20 (INSS e FUNCEF não deduzidos), o que aumenta o IR — premissa replicada da planilha, a confirmar (suspeita).** A saúde não é arredondada na planilha (tolerância de 0,01 nos testes).
+- **13º** (flag `perfil.decimo_ativo`, padrão **ativo**; migração `V8`): parcelas **fixas** em constante no código, fevereiro 50% e novembro 50%, não editáveis. Inativo = nenhum 13º na projeção (nem valor nem desconto). A V8 apaga as linhas `DECIMO_TERCEIRO` de `evento_salarial` (ficam mortas, pois as parcelas deixaram de ser dados) e restringe o `CHECK` da tabela a `PLR`, único uso restante. "Restaurar padrão" volta a ativo. As parcelas são pagas brutas (percentual × base). Na **última parcela do ano** desconta-se `INSS(total) + IR(total) + FUNCEF (pct × total) + Saúde Caixa sobre o total`, com `total` = soma das parcelas × base. Sem FUNCEF o IR deduz o INSS; **com FUNCEF o IR usa a dedução fixa de 607,20 (INSS e FUNCEF não deduzidos), o que aumenta o IR — premissa replicada da planilha, a confirmar (suspeita).** A saúde não é arredondada na planilha (tolerância de 0,01 nos testes).
 
 ## Estrutura
 

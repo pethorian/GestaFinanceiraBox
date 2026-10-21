@@ -13,7 +13,9 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class TratadorErros {
@@ -45,6 +47,16 @@ public class TratadorErros {
     ResponseEntity<ErroDto> integridade(DataIntegrityViolationException e) {
         log.warn("Violação de integridade", e);
         return resposta(HttpStatus.CONFLICT, "Operação viola uma restrição de integridade dos dados.", List.of());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<ErroDto> semRecurso(NoResourceFoundException e) {
+        return resposta(HttpStatus.NOT_FOUND, "Recurso não encontrado.", List.of());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ErroDto> metodoNaoSuportado(HttpRequestMethodNotSupportedException e) {
+        return resposta(HttpStatus.METHOD_NOT_ALLOWED, "Método não suportado para este endereço.", List.of());
     }
 
     @ExceptionHandler(Exception.class)

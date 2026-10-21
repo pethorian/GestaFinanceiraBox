@@ -133,6 +133,7 @@ public final class Entidades {
         @Column(name = "bonus_mes") public short bonusMes = 12;
         @Column(name = "bonus_salarios") public BigDecimal bonusSalarios = BigDecimal.ZERO;
         @Column(name = "plr_ativo") public boolean plrAtivo;
+        @Column(name = "decimo_ativo") public boolean decimoAtivo = true;
         public String nome;
         @Column(name = "atualizado_em") public LocalDateTime atualizadoEm = LocalDateTime.now();
     }
@@ -165,7 +166,7 @@ public final class Entidades {
     @Table(name = "evento_salarial")
     public static class EventoSalarial {
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
-        public String tipo = "DECIMO_TERCEIRO";
+        public String tipo = "PLR";
         public short mes;
         public BigDecimal percentual;
         public BigDecimal valor;

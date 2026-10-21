@@ -65,12 +65,16 @@ public final class Dtos {
 
     // ---- 13º ----------------------------------------------------------------------------------
 
-    public record ParcelaDecimoDto(
-            @Min(1) @Max(12) int mes,
-            @NotNull @DecimalMin(value = "0", inclusive = false) @DecimalMax("100") BigDecimal percentual) {
+    /** Parcela fixa do 13º (somente leitura): mês 1..12 e percentual do salário base. */
+    public record ParcelaDecimoDto(int mes, BigDecimal percentual) {
     }
 
-    public record DecimoDto(@NotNull @Valid List<ParcelaDecimoDto> parcelas, BigDecimal totalPercentual, String aviso) {
+    /** Saída de {@code GET/PUT /api/decimo}: flag {@code ativo} e parcelas fixas (fev 50% / nov 50%). */
+    public record DecimoDto(boolean ativo, List<ParcelaDecimoDto> parcelas, BigDecimal totalPercentual) {
+    }
+
+    /** Entrada de {@code PUT /api/decimo}: só a flag. */
+    public record DecimoAtivoDto(@NotNull Boolean ativo) {
     }
 
     // ---- PLR ----------------------------------------------------------------------------------

@@ -3,57 +3,45 @@ package br.com.gestafinanceira.application;
 import br.com.gestafinanceira.api.dto.Dtos.DecimoDto;
 import br.com.gestafinanceira.api.dto.Dtos.ParcelaDecimoDto;
 import br.com.gestafinanceira.domain.modelo.ParcelaDecimo;
-import br.com.gestafinanceira.infra.persistencia.EventoRepo;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Parcelas do 13º definidas pelo usuário (mês + percentual). A soma não pode passar de 100%. */
+/** 13º salário: parcelas fixas (fevereiro 50% e novembro 50%), com a opção de contar ou não na projeção. */
 @Service
 @Transactional
 public class DecimoService {
-    private final ParcelasEvento parcelas;
+    /** Parcelas fixas do 13º; não são editáveis. */
+    static final List<ParcelaDecimo> PARCELAS = List.of(
+            new ParcelaDecimo(2, BigDecimal.valueOf(50)), new ParcelaDecimo(11, BigDecimal.valueOf(50)));
 
-    public DecimoService(EventoRepo eventos) {
-        this.parcelas = new ParcelasEvento(eventos, "DECIMO_TERCEIRO", "13º");
+    private final PerfilService perfil;
+
+    public DecimoService(PerfilService perfil) {
+        this.perfil = perfil;
     }
 
     @Transactional(readOnly = true)
     public DecimoDto buscar() {
-        return montar(parcelas.listar());
+        List<ParcelaDecimoDto> dtos = PARCELAS.stream().map(p -> new ParcelaDecimoDto(p.mes(), p.percentual())).toList();
+        BigDecimal total = PARCELAS.stream().map(ParcelaDecimo::percentual).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new DecimoDto(perfil.entidade().decimoAtivo, dtos, total);
     }
 
-    public DecimoDto substituir(List<ParcelaDecimoDto> novas) {
-        parcelas.substituir(novas);
+    public DecimoDto definirAtivo(boolean ativo) {
+        perfil.entidade().decimoAtivo = ativo;
         return buscar();
     }
 
-    /** Acrescenta uma parcela com o que falta para 100%, no último mês livre do ano (dezembro para trás). */
-    public DecimoDto adicionarParcela() {
-        parcelas.adicionar();
-        return buscar();
-    }
-
+    /** Parcelas para o cálculo da projeção: vazio quando o 13º está inativo. */
     @Transactional(readOnly = true)
     public List<ParcelaDecimo> paraCalculo() {
-        return parcelas.paraCalculo();
+        return perfil.entidade().decimoAtivo ? PARCELAS : List.of();
     }
 
-    /** Padrão: 50% em fevereiro e 50% em novembro. */
+    /** Padrão: ativo. */
     public void restaurarPadrao() {
-        substituir(List.of(new ParcelaDecimoDto(2, BigDecimal.valueOf(50)), new ParcelaDecimoDto(11, BigDecimal.valueOf(50))));
-    }
-
-    private static DecimoDto montar(List<ParcelaDecimoDto> parcelas) {
-        BigDecimal total = ParcelasEvento.soma(parcelas);
-        String aviso = null;
-        if (parcelas.isEmpty()) {
-            aviso = "Nenhuma parcela do 13º cadastrada.";
-        } else if (total.compareTo(ParcelasEvento.CEM) < 0) {
-            aviso = "A soma dos percentuais é " + total + "%; os " + ParcelasEvento.CEM.subtract(total)
-                    + "% restantes não serão recebidos na projeção.";
-        }
-        return new DecimoDto(parcelas, total, aviso);
+        perfil.entidade().decimoAtivo = true;
     }
 }
