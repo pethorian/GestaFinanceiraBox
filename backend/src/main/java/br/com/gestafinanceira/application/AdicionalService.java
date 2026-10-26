@@ -14,11 +14,14 @@ import br.com.gestafinanceira.infra.persistencia.Entidades.DestinoAdicionalEntid
 import br.com.gestafinanceira.infra.persistencia.Entidades.Meta;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Perfil;
 import br.com.gestafinanceira.infra.persistencia.MetaRepo;
+import br.com.gestafinanceira.infra.persistencia.PlrGastoRepo;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -40,9 +43,11 @@ public class AdicionalService {
     private final MetaRepo metas;
     private final PerfilService perfil;
     private final ProjecaoService projecao;
+    private final PlrGastoRepo gastosPlr;
 
     public AdicionalService(DestinoAdicionalRepo destinos, MetaRepo metas, PerfilService perfil,
-                            ProjecaoService projecao) {
+                            ProjecaoService projecao, PlrGastoRepo gastosPlr) {
+        this.gastosPlr = gastosPlr;
         this.destinos = destinos;
         this.metas = metas;
         this.perfil = perfil;
@@ -78,13 +83,36 @@ public class AdicionalService {
         return new PlanosAdicionaisDto(buscar(EventoAdicional.DECIMO), buscar(EventoAdicional.PLR));
     }
 
-    /** Substitui a lista inteira de destinos do evento, na ordem recebida. */
+    /**
+     * Substitui a lista inteira de destinos do evento, na ordem recebida, preservando os ids: item com {@code id}
+     * do mesmo evento é atualizado; sem {@code id} é inserido; destino do evento que não veio é apagado (PLR: só se
+     * não houver gasto do controle do PLR nele). {@code id} desconhecido, de outro evento ou repetido = 422.
+     */
     public PlanoAdicionalDto substituir(EventoAdicional evento, List<DestinoEntradaDto> novos) {
         List<DestinoEntradaDto> lista = validar(novos);
-        destinos.apagarDoEvento(evento);
+        Map<Long, DestinoAdicionalEntidade> atuais = destinos.findByEventoOrderByOrdemAscIdAsc(evento).stream()
+                .collect(Collectors.toMap(e -> e.id, Function.identity(), (a, b) -> a, java.util.LinkedHashMap::new));
+        Set<Long> mantidos = new HashSet<>();
+        for (DestinoEntradaDto d : lista) {
+            if (d.id() == null) continue;
+            if (!atuais.containsKey(d.id())) {
+                throw new RegraDeNegocio("Destino " + d.id() + " não existe no plano de uso deste adicional.");
+            }
+            if (!mantidos.add(d.id())) throw new RegraDeNegocio("Destino " + d.id() + " repetido na lista.");
+        }
+        List<DestinoAdicionalEntidade> removidos = atuais.values().stream().filter(e -> !mantidos.contains(e.id)).toList();
+        if (evento == EventoAdicional.PLR) {
+            for (DestinoAdicionalEntidade r : removidos) {
+                if (gastosPlr.existsByDestinoIdInAndDeletadoEmIsNull(List.of(r.id))) {
+                    throw new RegraDeNegocio("Há gastos do PLR no destino '" + r.nome
+                            + "': mova ou apague esses gastos antes.");
+                }
+            }
+        }
+        destinos.deleteAll(removidos);
         for (int i = 0; i < lista.size(); i++) {
             DestinoEntradaDto d = lista.get(i);
-            DestinoAdicionalEntidade e = new DestinoAdicionalEntidade();
+            DestinoAdicionalEntidade e = d.id() != null ? atuais.get(d.id()) : new DestinoAdicionalEntidade();
             e.evento = evento;
             e.nome = d.nome();
             e.tipo = d.tipo();
@@ -123,7 +151,7 @@ public class AdicionalService {
             if (pct == null) erros.add(campo + "percentual: obrigatório");
             else if (pct.signum() <= 0 || pct.compareTo(CEM) > 0) erros.add(campo + "percentual: deve ser maior que 0 e até 100");
             else if (pct.stripTrailingZeros().scale() > 2) erros.add(campo + "percentual: no máximo 2 casas decimais");
-            r.add(new DestinoEntradaDto(nome, d.tipo(), pct, d.metaId()));
+            r.add(new DestinoEntradaDto(d.id(), nome, d.tipo(), pct, d.metaId()));
         }
         if (!erros.isEmpty()) throw new DadosInvalidos(erros);
 

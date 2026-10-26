@@ -201,4 +201,29 @@ public final class Entidades {
         @Column(name = "meta_id") public Long metaId;
         public int ordem;
     }
+
+    /** Dinheiro de PLR efetivamente recebido (V13). Exclusão lógica. */
+    @Entity(name = "PlrRecebimento")
+    @Table(name = "plr_recebimento")
+    public static class PlrRecebimento {
+        @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
+        public LocalDate data;
+        public String descricao;
+        public BigDecimal valor;
+        @Column(name = "criado_em") public LocalDateTime criadoEm = LocalDateTime.now();
+        @Column(name = "deletado_em") public LocalDateTime deletadoEm;
+    }
+
+    /** Gasto feito com o PLR recebido (V13), opcionalmente ligado a um destino do plano. Exclusão lógica. */
+    @Entity(name = "PlrGasto")
+    @Table(name = "plr_gasto")
+    public static class PlrGasto {
+        @Id @GeneratedValue(strategy = GenerationType.IDENTITY) public Long id;
+        public LocalDate data;
+        public String descricao;
+        public BigDecimal valor;
+        @Column(name = "destino_id") public Long destinoId;
+        @Column(name = "criado_em") public LocalDateTime criadoEm = LocalDateTime.now();
+        @Column(name = "deletado_em") public LocalDateTime deletadoEm;
+    }
 }
