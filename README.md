@@ -128,6 +128,10 @@ npm run dev     # http://localhost:5173, repassa /api para :8080
 
 Testes: `mvn test` em `backend/` (veja o README do backend) e `npm test` em `frontend/`.
 
+## Controle do PLR recebido
+
+A aba **PLR** reúne a estimativa que entra na projeção, o plano de uso (os destinos viram "envelopes", por exemplo 80% para gastos e 20% para coisas pessoais) e o **controle do dinheiro que você já recebeu**: registre os recebimentos e os gastos, e veja por envelope quanto foi alocado, gasto e quanto sobra. Este controle registra o dinheiro real e **não altera a projeção**. Detalhes em [backend/README.md](backend/README.md#controle-do-plr-recebido).
+
 ## Estrutura
 
 ```
