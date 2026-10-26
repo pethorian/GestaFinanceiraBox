@@ -121,6 +121,8 @@ export type TipoDestino = 'LAZER' | 'OBRIGATORIO' | 'RESERVA'
 
 /** Item enviado no PUT (a lista inteira substitui a anterior). metaId só com RESERVA. */
 export interface DestinoEntrada {
+  /** id do destino já gravado (preserva o vínculo dos gastos do PLR); ausente = destino novo */
+  id?: number
   nome: string
   tipo: TipoDestino
   percentual: number
@@ -441,4 +443,54 @@ export interface ParametrosVigentes {
   inss: TabelaFaixas
   irpf: TabelaFaixas
   beneficios: Beneficio
+}
+
+// ---- controle do PLR recebido -----------------------------------------------------------------
+// Registra o dinheiro real; não altera a projeção. Os destinos do plano de uso do PLR são os "envelopes".
+
+export interface PlrRecebimentoEntrada {
+  /** AAAA-MM-DD */
+  data: string
+  descricao: string
+  valor: number
+}
+export interface PlrRecebimento extends PlrRecebimentoEntrada {
+  id: number
+}
+
+export interface PlrGastoEntrada extends PlrRecebimentoEntrada {
+  /** destino do plano de uso do PLR (null = sem destino) */
+  destinoId: number | null
+}
+export interface PlrGasto extends PlrGastoEntrada {
+  id: number
+  destinoNome: string | null
+}
+
+/** Resumo de um envelope (calculado pelo back end). saldo < 0 = estourou. */
+export interface PlrDestinoControle {
+  id: number
+  nome: string
+  tipo: TipoDestino
+  percentual: number
+  alocado: number
+  gasto: number
+  saldo: number
+  /** gasto / alocado × 100 (0 se alocado = 0); pode passar de 100 */
+  percentualUsado: number
+}
+export interface PlrSemDestinoControle {
+  alocado: number
+  gasto: number
+  saldo: number
+  percentualUsado: number
+}
+export interface PlrControle {
+  recebido: number
+  gasto: number
+  saldo: number
+  destinos: PlrDestinoControle[]
+  semDestino: PlrSemDestinoControle
+  recebimentos: PlrRecebimento[]
+  gastos: PlrGasto[]
 }

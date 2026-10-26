@@ -7,6 +7,7 @@ import { GastosFixos } from './pages/GastosFixos'
 import { Metas } from './pages/Metas'
 import { Parametros } from './pages/Parametros'
 import { Perfil } from './pages/Perfil'
+import { Plr } from './pages/Plr'
 import { Projecao } from './pages/Projecao'
 import { SaudeFinanceira } from './pages/SaudeFinanceira'
 
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="gastos-fixos" element={<GastosFixos />} />
             <Route path="gastos-eventuais" element={<GastosEventuais />} />
             <Route path="decimo" element={<Decimo />} />
+            <Route path="plr" element={<Plr />} />
             <Route path="metas" element={<Metas />} />
             <Route path="parametros" element={<Parametros />} />
             <Route path="*" element={<Projecao />} />
