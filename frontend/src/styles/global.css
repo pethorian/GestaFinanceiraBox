@@ -521,3 +521,37 @@ input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-
 .sf-adic.compacto .sf-st{line-height:16px}
 
 .sf-adic.compacto .ad-faixas>div{font-size:11.5px;column-gap:4px}
+
+/* ---- Cartão de crédito */
+.cartao-barra{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:14px;padding:12px 16px}
+.cartao-barra select{min-width:160px}
+.cartao-nome{font-size:16px}
+.cartao-barra-acoes{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.cform{display:grid;grid-template-columns:minmax(160px,2fr) repeat(3,minmax(110px,1fr));gap:10px 12px;align-items:end;width:100%;margin-top:6px}
+.cform .f{margin-bottom:0}
+.cform-acoes{grid-column:1/-1;display:flex;gap:8px}
+.cartao-resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.cartao-resumo .card{display:flex;flex-direction:column;gap:4px;padding:12px 16px}
+.cartao-resumo b{font-size:20px}
+.ccompras,.cfaturas,.cartoes-card{margin-bottom:14px}
+.grow.crow{grid-template-columns:minmax(90px,1fr) 118px 112px 140px 92px 124px 30px}
+.cwrap{border-top:1px solid var(--line);padding:5px 0}
+.cwrap .grow{padding:0;border:0}
+.cinfo{font-size:12px;padding:2px 2px 4px}
+.ccompras .glist .cwrap:first-child{border-top:0}
+.fat{border-top:1px solid var(--line)}
+.fat:first-of-type{border-top:0}
+.fat-head{display:flex;justify-content:space-between;width:100%;background:none;border:0;color:inherit;font:inherit;padding:9px 4px;cursor:pointer;text-align:left}
+.fat-head:hover,.fat-head:focus-visible{background:rgba(255,255,255,.05)}
+.fat-itens{list-style:none;margin:0 0 8px;padding:0 4px 0 14px}
+.fat-itens li{display:flex;justify-content:space-between;gap:12px;padding:3px 0;font-size:13px}
+.cartoes-nota{font-size:12px;margin:0 0 8px}
+.cartao-linha{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.cartao-linha small{display:block}
+.cartao-linha .btn{text-decoration:none;color:inherit}
+@media(max-width:900px){
+  .grow.crow{grid-template-columns:1fr 1fr}
+  .cform{grid-template-columns:1fr 1fr}
+  .cartao-resumo{grid-template-columns:1fr}
+  .cartao-barra-acoes{margin-left:0}
+}

@@ -4,7 +4,7 @@ import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, GrupoGasto, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, ChaveAdicional, DestinoEntrada,
-  TipoLancamento,
+  TipoLancamento, Cartao,
 } from '../domain/types'
 
 /** Erros do plano de uso por evento (null = sem erro). Ficam na tela, sem desfazer o que o usuário digitou. */
@@ -35,6 +35,8 @@ interface AppCtx {
   resumoEventuais: ResumoGastos
   parametros: ParametrosVigentes
   categorias: Categoria[]
+  /** cartões com fatura atual, próxima fatura e limite disponível (calculados pelo back end) */
+  cartoes: Cartao[]
   salvando: boolean
   aviso: string | null
   limparAviso: () => void
@@ -62,6 +64,11 @@ interface AppCtx {
   /** grava (com atraso) a lista inteira de destinos do 13º ou do PLR; erros 400/422 vão para errosAdicionais */
   salvarDestinos: (evento: ChaveAdicional, destinos: DestinoEntrada[]) => void
   errosAdicionais: ErrosAdicionais
+  /**
+   * Executa uma gravação de cartão ou compra e recarrega cartões, projeção, resumos e saúde financeira.
+   * Devolve false (e mostra o aviso) se o servidor recusar; não descarta o que está na tela.
+   */
+  alterarCartoes: (op: () => Promise<unknown>) => Promise<boolean>
 }
 
 interface Carga {
@@ -72,6 +79,7 @@ interface Carga {
   resumoEventuais: ResumoGastos
   parametros: ParametrosVigentes
   categorias: Categoria[]
+  cartoes: Cartao[]
 }
 
 const Ctx = createContext<AppCtx | null>(null)
@@ -97,10 +105,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const carregarTudo = useCallback(async () => {
     try {
-      const [dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias] = await Promise.all([
+      const [dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias, cartoes] = await Promise.all([
         api.dados(), api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.parametros(), api.categorias(),
+        api.cartoes(),
       ])
-      setCarga({ dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias })
+      setCarga({ dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias, cartoes })
       setErroFatal(null)
     } catch (e) {
       setErroFatal(mensagem(e))
@@ -112,15 +121,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** Pede ao back end a projeção e os resumos atualizados (ignora respostas antigas). */
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
-    const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr] = await Promise.all([
+    const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr, cartoes, categorias] = await Promise.all([
       api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.plr(), api.saudeFinanceira(),
-      api.planoAdicional('decimo'), api.planoAdicional('plr'),
+      api.planoAdicional('decimo'), api.planoAdicional('plr'), api.cartoes(), api.categorias(),
     ])
     if (minha === seqCalculos.current) {
       // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela.
       // A saúde financeira depende da renda, dos gastos e dos aportes: volta inteira do servidor.
       setCarga((c) => (c ? {
-        ...c, projecao, mesComum, resumoFixos, resumoEventuais,
+        ...c, projecao, mesComum, resumoFixos, resumoEventuais, cartoes,
+        // uma compra de cartão pode criar categoria nova: a lista volta do servidor
+        categorias,
         // o plano de uso (prévia, ativo, nome das metas) depende do salário, dos eventos e das metas: volta inteiro
         dados: {
           ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual },
@@ -297,6 +308,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
     },
 
+    alterarCartoes: async (op: () => Promise<unknown>) => {
+      setPendentes((n) => n + 1)
+      try {
+        await op()
+        await recalcular()
+        return true
+      } catch (e) {
+        setAviso(mensagem(e))
+        return false
+      } finally {
+        setPendentes((n) => n - 1)
+      }
+    },
+
     salvarParametros: async (op: () => Promise<unknown>) => {
       try {
         await op()
@@ -315,7 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAviso(mensagem(e))
       }
     },
-  }), [agendar, executar, mudar, carregarTudo])
+  }), [agendar, executar, mudar, carregarTudo, recalcular])
 
   const valor = useMemo<AppCtx | null>(() => (carga ? {
     ...carga, ...acoes, salvando: pendentes > 0, aviso, limparAviso: () => setAviso(null), errosAdicionais,
