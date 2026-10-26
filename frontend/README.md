@@ -35,7 +35,8 @@ src/
 | Projeção e memória de cálculo | `GET /api/projecao` (inclui `resumo`: médias, melhor/pior mês, meses no vermelho) |
 | Perfil (prévia do mês) | `GET/PUT /api/perfil`, `GET /api/projecao/mes-comum`, `GET /api/parametros/vigentes` |
 | Gastos | `/api/lancamentos`, `GET /api/lancamentos/resumo`, `GET /api/categorias` |
-| 13º, férias, PLR e bônus | `GET/PUT /api/decimo`, `GET/PUT /api/ferias`, `GET/PUT /api/plr` (+ `POST /api/plr/parcelas`), `GET/PUT /api/bonus` |
+| 13º, férias e bônus | `GET/PUT /api/decimo`, `GET/PUT /api/ferias`, `GET/PUT /api/bonus` |
+| PLR | `GET/PUT /api/plr`, plano de uso (envelopes) em `GET/PUT /api/adicionais/plr/destinos` e controle do PLR recebido em `GET /api/plr/controle`, `/api/plr/recebimentos` e `/api/plr/gastos`. O controle registra o dinheiro real e **não altera a projeção** |
 | Metas | `/api/metas` (percentual e previsão calculados no back end) |
 | Parâmetros | `GET /api/parametros/vigentes`; "restaurar" usa `POST /api/dados/restaurar` |
 

@@ -6,6 +6,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ### Adicionado
 - Aba "Cartão de crédito": cadastro de cartões (fechamento, vencimento e limite) e de todas as compras (à vista, parceladas ou assinaturas); a fatura de cada mês entra nos gastos fixos, na projeção, na média por categoria e na Saúde financeira, com limite disponível e faturas dos próximos 12 meses. Em Gastos fixos, um card lista os cartões e permite cadastrar um novo.
+- Aba "PLR" com o controle do PLR recebido: registre o que já caiu na conta e os gastos feitos com ele, divida em envelopes (os destinos do plano de uso do PLR, com sugestão 80/20) e veja quanto foi alocado, gasto e quanto sobra em cada um. O controle não altera a projeção. A aba "13º, férias e PLR" passa a se chamar "13º e férias".
 - Plano de uso do 13º e do PLR: o usuário divide cada adicional entre lazer, gastos obrigatórios e reservas (opcionalmente ligadas a uma meta); a projeção mostra a divisão no mês em que a parcela cai e a Saúde financeira compara o plano com o 50/30/20.
 - FUNCEF como reserva: a contribuição conta como poupança na Saúde financeira; saldo atual da FUNCEF no Perfil e previdência e patrimônio total na projeção.
 - Aba "Saúde financeira" com o método 50/30/20 opcional: compara necessidades, desejos e poupança com a renda líquida, classifica cada categoria como obrigatória ou lazer, sugere quanto guardar em Metas e reserva e mostra gráficos.
@@ -21,6 +22,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 - Aviso para não contar com o dinheiro do PLR ao ativá-lo e no detalhe do mês da projeção.
 
 ### Alterado
+- O plano de uso do 13º/PLR preserva o identificador de cada destino ao ser salvo; remover um destino do PLR que tenha gastos registrados é bloqueado.
 - A aba "Gastos mensais" foi dividida em "Gastos fixos" (todo mês e parcelado) e "Gastos eventuais" (uma vez só), cada uma com a sua média por categoria. `/gastos` redireciona para `/gastos-fixos`; `POST /api/lancamentos/novo` aceita `?tipo=` e `GET /api/lancamentos/resumo` aceita `?grupo=FIXOS|EVENTUAIS`.
 - Previsão de conclusão das metas passa a ser o mês do último aporte.
 - Dropdowns com visual único em todas as telas.

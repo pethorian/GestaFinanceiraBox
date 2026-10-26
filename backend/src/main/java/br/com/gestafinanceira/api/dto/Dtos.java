@@ -321,7 +321,29 @@ public final class Dtos {
      * {@code nome} 1..60 depois de aparado, {@code tipo} obrigatório, {@code percentual} 0 &lt; p ≤ 100 (2 casas),
      * {@code metaId} opcional, só com {@code RESERVA} e de meta existente.
      */
-    public record DestinoEntradaDto(String nome, TipoDestino tipo, BigDecimal percentual, Long metaId) {
+    public record DestinoEntradaDto(Long id, String nome, TipoDestino tipo, BigDecimal percentual, Long metaId) {
+    }
+
+    /** Entrada de um recebimento de PLR (data, descrição até 120, valor > 0 com até 2 casas). */
+    public record PlrRecebimentoEntradaDto(java.time.LocalDate data, String descricao, BigDecimal valor) {
+    }
+
+    public record PlrRecebimentoDto(Long id, java.time.LocalDate data, String descricao, BigDecimal valor) {
+    }
+
+    /** Entrada de um gasto do PLR; {@code destinoId} opcional (destino do plano de uso do PLR). */
+    public record PlrGastoEntradaDto(java.time.LocalDate data, String descricao, BigDecimal valor, Long destinoId) {
+    }
+
+    public record PlrGastoDto(Long id, java.time.LocalDate data, String descricao, BigDecimal valor, Long destinoId,
+                              String destinoNome) {
+    }
+
+    /** Resumo (cálculo do domínio, achatado) + listas por data decrescente. */
+    public record PlrControleDto(BigDecimal recebido, BigDecimal gasto, BigDecimal saldo,
+                                 List<br.com.gestafinanceira.domain.calculo.plr.ControlePlr.Destino> destinos,
+                                 br.com.gestafinanceira.domain.calculo.plr.ControlePlr.SemDestino semDestino,
+                                 List<PlrRecebimentoDto> recebimentos, List<PlrGastoDto> gastos) {
     }
 
     /** Destino gravado; {@code metaNome} é o nome da meta ligada (nulo sem meta). */

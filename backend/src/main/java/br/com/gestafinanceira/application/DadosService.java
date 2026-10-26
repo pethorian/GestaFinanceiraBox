@@ -15,10 +15,13 @@ public class DadosService {
     private final PlrService plr;
     private final SaudeFinanceiraService saude;
     private final AdicionalService adicionais;
+    private final PlrControleService plrControle;
     private final CartaoService cartoes;
 
     public DadosService(PerfilService perfil, LancamentoService lancamentos, DecimoService decimo, MetaService metas,
-                        PlrService plr, SaudeFinanceiraService saude, AdicionalService adicionais, CartaoService cartoes) {
+                        PlrService plr, SaudeFinanceiraService saude, AdicionalService adicionais,
+                        PlrControleService plrControle, CartaoService cartoes) {
+        this.plrControle = plrControle;
         this.cartoes = cartoes;
         this.saude = saude;
         this.plr = plr;
@@ -35,7 +38,8 @@ public class DadosService {
     }
 
     /**
-     * Volta perfil, gastos, 13º, PLR, bônus, metas e o plano de uso do 13º/PLR (sem destinos) ao padrão.
+     * Volta perfil, gastos, 13º, PLR (e o controle do PLR recebido, com exclusão lógica), bônus, metas e o plano de
+     * uso do 13º/PLR (sem destinos) ao padrão.
      * Tabelas de parâmetros não são alteradas.
      */
     public DadosDto restaurarPadrao() {
@@ -44,6 +48,7 @@ public class DadosService {
         cartoes.removerTodos();
         decimo.restaurarPadrao();
         plr.restaurarPadrao();
+        plrControle.restaurarPadrao();
         adicionais.restaurarPadrao();
         metas.restaurarPadrao();
         return buscar();
