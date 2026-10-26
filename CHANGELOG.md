@@ -22,6 +22,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ### Alterado
 - O plano de uso do 13º/PLR preserva o identificador de cada destino ao ser salvo; remover um destino do PLR que tenha gastos registrados é bloqueado.
+- A aba "Gastos mensais" foi dividida em "Gastos fixos" (todo mês e parcelado) e "Gastos eventuais" (uma vez só), cada uma com a sua média por categoria. `/gastos` redireciona para `/gastos-fixos`; `POST /api/lancamentos/novo` aceita `?tipo=` e `GET /api/lancamentos/resumo` aceita `?grupo=FIXOS|EVENTUAIS`.
 - Previsão de conclusão das metas passa a ser o mês do último aporte.
 - Dropdowns com visual único em todas as telas.
 

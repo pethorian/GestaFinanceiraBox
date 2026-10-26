@@ -1,8 +1,9 @@
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AppProvider } from './store/AppContext'
 import { Decimo } from './pages/Decimo'
-import { Gastos } from './pages/Gastos'
+import { GastosEventuais } from './pages/GastosEventuais'
+import { GastosFixos } from './pages/GastosFixos'
 import { Metas } from './pages/Metas'
 import { Parametros } from './pages/Parametros'
 import { Perfil } from './pages/Perfil'
@@ -19,7 +20,9 @@ export default function App() {
             <Route index element={<Projecao />} />
             <Route path="saude" element={<SaudeFinanceira />} />
             <Route path="perfil" element={<Perfil />} />
-            <Route path="gastos" element={<Gastos />} />
+            <Route path="gastos" element={<Navigate to="/gastos-fixos" replace />} />
+            <Route path="gastos-fixos" element={<GastosFixos />} />
+            <Route path="gastos-eventuais" element={<GastosEventuais />} />
             <Route path="decimo" element={<Decimo />} />
             <Route path="plr" element={<Plr />} />
             <Route path="metas" element={<Metas />} />

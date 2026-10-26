@@ -4,6 +4,7 @@ import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, GrupoGasto, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, ChaveAdicional, DestinoEntrada,
+  TipoLancamento,
 } from '../domain/types'
 
 /** Erros do plano de uso por evento (null = sem erro). Ficam na tela, sem desfazer o que o usuário digitou. */
@@ -30,7 +31,8 @@ interface AppCtx {
   projecao: Projecao
   /** mês "comum" (sem 13º e férias), calculado pelo back end */
   mesComum: MesProjecao
-  resumoGastos: ResumoGastos
+  resumoFixos: ResumoGastos
+  resumoEventuais: ResumoGastos
   parametros: ParametrosVigentes
   categorias: Categoria[]
   salvando: boolean
@@ -44,7 +46,7 @@ interface AppCtx {
   alternarPlr: (ativo: boolean) => Promise<void>
   editarPlr: (parcelas: ParcelaPlr[]) => void
   editarBonus: (patch: Partial<Bonus>) => void
-  adicionarLancamento: () => Promise<void>
+  adicionarLancamento: (tipo?: TipoLancamento) => Promise<void>
   editarLancamento: (id: number, patch: Partial<Lancamento>) => void
   removerLancamento: (id: number) => Promise<void>
   adicionarMeta: () => Promise<void>
@@ -66,7 +68,8 @@ interface Carga {
   dados: Dados
   projecao: Projecao
   mesComum: MesProjecao
-  resumoGastos: ResumoGastos
+  resumoFixos: ResumoGastos
+  resumoEventuais: ResumoGastos
   parametros: ParametrosVigentes
   categorias: Categoria[]
 }
@@ -94,10 +97,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const carregarTudo = useCallback(async () => {
     try {
-      const [dados, projecao, mesComum, resumoGastos, parametros, categorias] = await Promise.all([
-        api.dados(), api.projecao(), api.mesComum(), api.resumoGastos(), api.parametros(), api.categorias(),
+      const [dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias] = await Promise.all([
+        api.dados(), api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.parametros(), api.categorias(),
       ])
-      setCarga({ dados, projecao, mesComum, resumoGastos, parametros, categorias })
+      setCarga({ dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias })
       setErroFatal(null)
     } catch (e) {
       setErroFatal(mensagem(e))
@@ -109,15 +112,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** Pede ao back end a projeção e os resumos atualizados (ignora respostas antigas). */
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
-    const [projecao, mesComum, resumoGastos, plr, saudeFinanceira, planoDecimo, planoPlr] = await Promise.all([
-      api.projecao(), api.mesComum(), api.resumoGastos(), api.plr(), api.saudeFinanceira(),
+    const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr] = await Promise.all([
+      api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.plr(), api.saudeFinanceira(),
       api.planoAdicional('decimo'), api.planoAdicional('plr'),
     ])
     if (minha === seqCalculos.current) {
       // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela.
       // A saúde financeira depende da renda, dos gastos e dos aportes: volta inteira do servidor.
       setCarga((c) => (c ? {
-        ...c, projecao, mesComum, resumoGastos,
+        ...c, projecao, mesComum, resumoFixos, resumoEventuais,
         // o plano de uso (prévia, ativo, nome das metas) depende do salário, dos eventos e das metas: volta inteiro
         dados: {
           ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual },
@@ -206,8 +209,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       agendar('bonus', () => api.salvarBonus(cargaRef.current!.dados.bonus))
     },
 
-    adicionarLancamento: () => executar(async () => {
-      const criado = await api.novoLancamento()
+    adicionarLancamento: (tipo?: TipoLancamento) => executar(async () => {
+      const criado = await api.novoLancamento(tipo)
       mudar((d) => ({ ...d, lancamentos: [...d.lancamentos, criado] }))
     }),
     editarLancamento: (id: number, patch: Partial<Lancamento>) => {

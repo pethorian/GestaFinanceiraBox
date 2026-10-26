@@ -8,9 +8,10 @@ export const ROTAS: Rota[] = [
   { to: '/', label: 'Projeção', icon: 'chart' },
   { to: '/saude', label: 'Saúde financeira', icon: 'pulse' },
   { to: '/perfil', label: 'Meu perfil', icon: 'user' },
-  { to: '/gastos', label: 'Gastos mensais', icon: 'receipt' },
+  { to: '/gastos-fixos', label: 'Gastos fixos', icon: 'receipt' },
+  { to: '/gastos-eventuais', label: 'Gastos eventuais', icon: 'wallet' },
   { to: '/decimo', label: '13º e férias', icon: 'gift' },
-  { to: '/plr', label: 'PLR', icon: 'wallet' },
+  { to: '/plr', label: 'PLR', icon: 'star' },
   { to: '/metas', label: 'Metas e reserva', icon: 'target' },
   { to: '/parametros', label: 'Parâmetros', icon: 'cog' },
 ]
@@ -31,9 +32,9 @@ function Sidebar() {
       <div className="nl">Visão geral</div>
       {ROTAS.slice(0, 2).map(link)}
       <div className="nl">Meus dados</div>
-      {ROTAS.slice(2, 7).map(link)}
+      {ROTAS.slice(2, 8).map(link)}
       <div className="sp" />
-      {link(ROTAS[7])}
+      {link(ROTAS[8])}
       <div className="user">
         <div className="av">VC</div>
         <div><b>Você</b><small>Instalação local</small></div>

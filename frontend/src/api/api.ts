@@ -3,6 +3,7 @@ import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas, ChaveAdicional, DestinoEntrada, PlanoAdicional,
   PlrControle, PlrGasto, PlrGastoEntrada, PlrRecebimento, PlrRecebimentoEntrada,
+  GrupoLancamento, TipoLancamento,
 } from '../domain/types'
 import { http } from './http'
 
@@ -28,7 +29,9 @@ export const api = {
   // saúde financeira (método 50/30/20)
   saudeFinanceira: () => http.get<SaudeFinanceira>('/api/saude-financeira'),
   salvarSaudeFinanceira: (participa: boolean) => http.put<SaudeFinanceira>('/api/saude-financeira', { participa }),
-  resumoGastos: () => http.get<ResumoGastos>('/api/lancamentos/resumo'),
+  /** grupo: FIXOS (todo mês + parcelado) ou EVENTUAIS (uma vez); sem grupo soma tudo */
+  resumoGastos: (grupo?: GrupoLancamento) =>
+    http.get<ResumoGastos>(grupo ? `/api/lancamentos/resumo?grupo=${grupo}` : '/api/lancamentos/resumo'),
 
   // parâmetros (tabelas com vigência)
   salvarInss: (t: TabelaFaixas) => http.put<TabelaFaixas[]>('/api/parametros/inss', t),
@@ -68,7 +71,8 @@ export const api = {
   removerPlrGasto: (id: number) => http.delete(`/api/plr/gastos/${id}`),
 
   /** nova linha com os valores padrão definidos pelo servidor */
-  novoLancamento: () => http.post<Lancamento>('/api/lancamentos/novo'),
+  novoLancamento: (tipo?: TipoLancamento) =>
+    http.post<Lancamento>(tipo ? `/api/lancamentos/novo?tipo=${tipo}` : '/api/lancamentos/novo'),
   salvarLancamento: (l: Lancamento) => http.put<Lancamento>(`/api/lancamentos/${l.id}`, l),
   removerLancamento: (id: number) => http.delete(`/api/lancamentos/${id}`),
 
