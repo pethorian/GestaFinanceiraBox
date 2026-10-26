@@ -2,6 +2,7 @@ import { rotuloCompetencia } from '../domain/format'
 import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas, ChaveAdicional, DestinoEntrada, PlanoAdicional,
+  PlrControle, PlrGasto, PlrGastoEntrada, PlrRecebimento, PlrRecebimentoEntrada,
 } from '../domain/types'
 import { http } from './http'
 
@@ -54,8 +55,17 @@ export const api = {
   salvarDestinos: (evento: ChaveAdicional, destinos: DestinoEntrada[]) =>
     http.put<PlanoAdicional>(
       `/api/adicionais/${evento}/destinos`,
-      destinos.map(({ nome, tipo, percentual, metaId }) => ({ nome, tipo, percentual, metaId: tipo === 'RESERVA' ? metaId : null })),
+      destinos.map(({ id, nome, tipo, percentual, metaId }) => ({ id, nome, tipo, percentual, metaId: tipo === 'RESERVA' ? metaId : null })),
     ),
+
+  // controle do PLR recebido (recebimentos e gastos reais; não altera a projeção)
+  plrControle: () => http.get<PlrControle>('/api/plr/controle'),
+  criarPlrRecebimento: (r: PlrRecebimentoEntrada) => http.post<PlrRecebimento>('/api/plr/recebimentos', r),
+  salvarPlrRecebimento: (id: number, r: PlrRecebimentoEntrada) => http.put<PlrRecebimento>(`/api/plr/recebimentos/${id}`, r),
+  removerPlrRecebimento: (id: number) => http.delete(`/api/plr/recebimentos/${id}`),
+  criarPlrGasto: (g: PlrGastoEntrada) => http.post<PlrGasto>('/api/plr/gastos', g),
+  salvarPlrGasto: (id: number, g: PlrGastoEntrada) => http.put<PlrGasto>(`/api/plr/gastos/${id}`, g),
+  removerPlrGasto: (id: number) => http.delete(`/api/plr/gastos/${id}`),
 
   /** nova linha com os valores padrão definidos pelo servidor */
   novoLancamento: () => http.post<Lancamento>('/api/lancamentos/novo'),
