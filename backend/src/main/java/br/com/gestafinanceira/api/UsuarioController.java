@@ -13,6 +13,8 @@ import br.com.gestafinanceira.api.dto.Dtos.PerfilDto;
 import br.com.gestafinanceira.api.dto.Dtos.PlrDto;
 import br.com.gestafinanceira.api.dto.Dtos.ResumoGastosDto;
 import br.com.gestafinanceira.application.DadosService;
+import br.com.gestafinanceira.domain.modelo.GrupoLancamento;
+import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import br.com.gestafinanceira.application.DecimoService;
 import br.com.gestafinanceira.application.LancamentoService;
 import br.com.gestafinanceira.application.MetaService;
@@ -127,13 +129,14 @@ public class UsuarioController {
     }
 
     @GetMapping("/lancamentos/resumo")
-    public ResumoGastosDto resumoLancamentos(@RequestParam(required = false) YearMonth inicio) {
-        return lancamentos.resumoPorCategoria(inicio);
+    public ResumoGastosDto resumoLancamentos(@RequestParam(required = false) YearMonth inicio,
+                                           @RequestParam(required = false) GrupoLancamento grupo) {
+        return lancamentos.resumoPorCategoria(inicio, grupo);
     }
 
     @PostMapping("/lancamentos/novo")
-    public ResponseEntity<LancamentoDto> novoLancamento() {
-        LancamentoDto criado = lancamentos.criarNovo();
+    public ResponseEntity<LancamentoDto> novoLancamento(@RequestParam(required = false) TipoLancamento tipo) {
+        LancamentoDto criado = lancamentos.criarNovo(tipo != null ? tipo : TipoLancamento.RECORRENTE);
         return ResponseEntity.created(URI.create("/api/lancamentos/" + criado.id())).body(criado);
     }
 
