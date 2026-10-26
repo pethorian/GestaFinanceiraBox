@@ -2,6 +2,7 @@ package br.com.gestafinanceira.api.dto;
 
 import br.com.gestafinanceira.domain.calculo.adicionais.DestinoValor;
 import br.com.gestafinanceira.domain.calculo.adicionais.TotaisAdicionais;
+import br.com.gestafinanceira.domain.calculo.cartao.TipoCompra;
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
 import br.com.gestafinanceira.domain.calculo.saude.Faixas;
 import br.com.gestafinanceira.domain.calculo.saude.SaudeAdicionais;
@@ -14,6 +15,7 @@ import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -70,6 +72,49 @@ public final class Dtos {
     }
 
     public record CategoriaDto(@NotBlank @Size(max = 60) String nome, int ordem, GrupoGasto grupo) {
+    }
+
+    // ---- cartão de crédito --------------------------------------------------------------------
+
+    public record CartaoEntradaDto(
+            @NotBlank @Size(max = 60) String nome,
+            @NotNull @Min(1) @Max(31) Integer diaFechamento,
+            @NotNull @Min(1) @Max(31) Integer diaVencimento,
+            @DecimalMin("0") @Digits(integer = 12, fraction = 2) BigDecimal limite) {
+        public CartaoEntradaDto {
+            if (nome != null) nome = nome.strip();
+        }
+    }
+
+    /**
+     * {@code faturaAtual}/{@code proximaFatura}: total das faturas que vencem no mês atual e no seguinte.
+     * {@code comprometido}: parcelas com vencimento a partir do mês atual (sem assinaturas).
+     * {@code limiteDisponivel}: limite menos comprometido (nulo sem limite).
+     */
+    public record CartaoDto(
+            Long id, String nome, int diaFechamento, int diaVencimento, BigDecimal limite,
+            BigDecimal faturaAtual, BigDecimal proximaFatura, BigDecimal comprometido, BigDecimal limiteDisponivel) {
+    }
+
+    /** {@code valor}: total da compra (assinatura: valor mensal). {@code parcelas}: 2..72 em PARCELADA, ignorado nos demais. */
+    public record CompraEntradaDto(
+            @NotBlank @Size(max = 160) String descricao,
+            @NotBlank @Size(max = 60) String categoria,
+            @NotNull TipoCompra tipo,
+            @NotNull LocalDate dataCompra,
+            @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 12, fraction = 2) BigDecimal valor,
+            Integer parcelas) {
+        public CompraEntradaDto {
+            if (descricao != null) descricao = descricao.strip();
+            if (categoria != null) categoria = categoria.strip();
+        }
+    }
+
+    /** Compra com os campos calculados: parcela, primeira/última fatura (AAAA-MM; última nula em assinatura). */
+    public record CompraDto(
+            Long id, Long cartaoId, String descricao, String categoria, TipoCompra tipo, LocalDate dataCompra,
+            BigDecimal valor, int parcelas, BigDecimal valorParcela, YearMonth primeiraFatura, YearMonth ultimaFatura,
+            Integer parcelasRestantes) {
     }
 
     // ---- 13º ----------------------------------------------------------------------------------

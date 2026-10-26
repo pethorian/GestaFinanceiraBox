@@ -15,9 +15,11 @@ public class DadosService {
     private final PlrService plr;
     private final SaudeFinanceiraService saude;
     private final AdicionalService adicionais;
+    private final CartaoService cartoes;
 
     public DadosService(PerfilService perfil, LancamentoService lancamentos, DecimoService decimo, MetaService metas,
-                        PlrService plr, SaudeFinanceiraService saude, AdicionalService adicionais) {
+                        PlrService plr, SaudeFinanceiraService saude, AdicionalService adicionais, CartaoService cartoes) {
+        this.cartoes = cartoes;
         this.saude = saude;
         this.plr = plr;
         this.perfil = perfil;
@@ -39,6 +41,7 @@ public class DadosService {
     public DadosDto restaurarPadrao() {
         perfil.restaurarPadrao();
         lancamentos.restaurarPadrao();
+        cartoes.removerTodos();
         decimo.restaurarPadrao();
         plr.restaurarPadrao();
         adicionais.restaurarPadrao();
