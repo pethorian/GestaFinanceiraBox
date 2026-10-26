@@ -4,6 +4,66 @@ export type Saude = 'NAO' | 'SOZINHO' | 'DEP'
 export type TipoLancamento = 'RECORRENTE' | 'PONTUAL' | 'PARCELADO'
 export type GrupoLancamento = 'FIXOS' | 'EVENTUAIS'
 
+// ---- cartão de crédito (tudo calculado pelo back end) ----
+export type TipoCompra = 'A_VISTA' | 'PARCELADA' | 'ASSINATURA'
+
+export interface Cartao {
+  id: number
+  nome: string
+  diaFechamento: number
+  diaVencimento: number
+  limite: number | null
+  /** total da fatura que vence no mês atual */
+  faturaAtual: number
+  proximaFatura: number
+  /** parcelas com vencimento a partir do mês atual (sem assinaturas) */
+  comprometido: number
+  /** limite menos comprometido; null sem limite */
+  limiteDisponivel: number | null
+}
+
+export interface CartaoEntrada {
+  nome: string
+  diaFechamento: number
+  diaVencimento: number
+  limite: number | null
+}
+
+/** `valor` é o total da compra (assinatura: valor mensal). */
+export interface CompraEntrada {
+  descricao: string
+  categoria: string
+  tipo: TipoCompra
+  dataCompra: string
+  valor: number
+  parcelas: number
+}
+
+export interface CompraCartao extends CompraEntrada {
+  id: number
+  cartaoId: number
+  valorParcela: number
+  /** AAAA-MM */
+  primeiraFatura: string
+  ultimaFatura: string | null
+  parcelasRestantes: number | null
+}
+
+export interface ItemFatura {
+  compraId: number
+  descricao: string
+  categoria: string
+  /** rótulo "3/10"; null em compra à vista e assinatura */
+  parcela: string | null
+  valor: number
+}
+
+export interface Fatura {
+  mes: string
+  total: number
+  itens: ItemFatura[]
+}
+
 export interface Perfil {
   /** como o usuário quer ser chamado (opcional, até 60 caracteres); null = sem nome */
   nome: string | null

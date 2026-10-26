@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AppProvider } from './store/AppContext'
+import { Cartao } from './pages/Cartao'
 import { Decimo } from './pages/Decimo'
 import { GastosEventuais } from './pages/GastosEventuais'
 import { GastosFixos } from './pages/GastosFixos'
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="gastos" element={<Navigate to="/gastos-fixos" replace />} />
             <Route path="gastos-fixos" element={<GastosFixos />} />
             <Route path="gastos-eventuais" element={<GastosEventuais />} />
+            <Route path="cartao" element={<Cartao />} />
             <Route path="decimo" element={<Decimo />} />
             <Route path="plr" element={<Plr />} />
             <Route path="metas" element={<Metas />} />

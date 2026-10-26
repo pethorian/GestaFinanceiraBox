@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjecaoService {
     private final PerfilService perfil;
     private final LancamentoService lancamentos;
+    private final CartaoService cartoes;
     private final DecimoService decimo;
     private final PlrService plr;
     private final ParametrosService parametros;
@@ -45,7 +46,8 @@ public class ProjecaoService {
 
     public ProjecaoService(PerfilService perfil, LancamentoService lancamentos, DecimoService decimo,
                            PlrService plr, ParametrosService parametros, MetaService metas, Clock clock,
-                           DestinoAdicionalRepo destinos) {
+                           DestinoAdicionalRepo destinos, CartaoService cartoes) {
+        this.cartoes = cartoes;
         this.metas = metas;
         this.clock = clock;
         this.plr = plr;
@@ -135,8 +137,15 @@ public class ProjecaoService {
                 p.dependentes, p.funcefPct, p.valeTransporte, p.sindicato, p.saldoInicial,
                 new Ferias(p.feriasAtivo, p.feriasMes, p.feriasAbono),
                 new Bonus(p.bonusAtivo, p.bonusMes, p.bonusSalarios), p.saldoFuncef);
-        return new DadosProjecao(pc, lancamentos.paraCalculo(), decimo.paraCalculo(), plr.paraCalculo(),
+        return new DadosProjecao(pc, gastos(), decimo.paraCalculo(), plr.paraCalculo(),
                 metas.paraCalculo(), destinosParaCalculo());
+    }
+
+    /** Lançamentos mais as faturas dos cartões (a fatura é gasto fixo). */
+    private List<br.com.gestafinanceira.domain.modelo.GastoCalculo> gastos() {
+        List<br.com.gestafinanceira.domain.modelo.GastoCalculo> r = new ArrayList<>(lancamentos.paraCalculo());
+        r.addAll(cartoes.paraCalculo());
+        return r;
     }
 
     /** Plano de uso do 13º/PLR no formato do motor (meta inexistente vira reserva geral no próprio motor). */

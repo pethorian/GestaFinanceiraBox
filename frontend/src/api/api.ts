@@ -3,7 +3,7 @@ import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas, ChaveAdicional, DestinoEntrada, PlanoAdicional,
   PlrControle, PlrGasto, PlrGastoEntrada, PlrRecebimento, PlrRecebimentoEntrada,
-  GrupoLancamento, TipoLancamento,
+  GrupoLancamento, TipoLancamento, Cartao, CartaoEntrada, CompraCartao, CompraEntrada, Fatura,
 } from '../domain/types'
 import { http } from './http'
 
@@ -79,4 +79,18 @@ export const api = {
   novaMeta: () => http.post<Meta>('/api/metas/novo'),
   salvarMeta: (id: number, m: MetaEntrada) => http.put<Meta>(`/api/metas/${id}`, m),
   removerMeta: (id: number) => http.delete(`/api/metas/${id}`),
+
+  // cartão de crédito
+  cartoes: () => http.get<Cartao[]>('/api/cartoes'),
+  criarCartao: (c: CartaoEntrada) => http.post<Cartao>('/api/cartoes', c),
+  salvarCartao: (id: number, c: CartaoEntrada) => http.put<Cartao>(`/api/cartoes/${id}`, c),
+  removerCartao: (id: number) => http.delete(`/api/cartoes/${id}`),
+  comprasCartao: (cartaoId: number) => http.get<CompraCartao[]>(`/api/cartoes/${cartaoId}/compras`),
+  criarCompra: (cartaoId: number, c: CompraEntrada) =>
+    http.post<CompraCartao>(`/api/cartoes/${cartaoId}/compras`, c),
+  salvarCompra: (id: number, c: CompraEntrada) => http.put<CompraCartao>(`/api/cartoes/compras/${id}`, c),
+  removerCompra: (id: number) => http.delete(`/api/cartoes/compras/${id}`),
+  /** 12 faturas por mês de vencimento, a partir de `inicio` (AAAA-MM; padrão: mês atual) */
+  faturasCartao: (cartaoId: number, inicio?: string) =>
+    http.get<Fatura[]>(inicio ? `/api/cartoes/${cartaoId}/faturas?inicio=${inicio}` : `/api/cartoes/${cartaoId}/faturas`),
 }

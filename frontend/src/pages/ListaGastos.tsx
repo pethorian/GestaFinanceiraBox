@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Icon } from '../components/Icon'
 import { Card, NumberInput, Page } from '../components/ui'
 import { fmt } from '../domain/format'
@@ -18,6 +19,8 @@ export interface ListaGastosProps {
   onAdicionar: () => void
   onEditar: (id: number, patch: Partial<Lancamento>) => void
   onRemover: (id: number) => void
+  /** conteúdo extra abaixo da lista (ex.: card de cartões na aba Gastos fixos) */
+  children?: ReactNode
 }
 
 /** Lista editável de gastos e card "Por categoria"; usada pelas abas Gastos fixos e Gastos eventuais. */
@@ -93,6 +96,7 @@ export function ListaGastos(p: ListaGastosProps) {
           ))}
         </Card>
       </div>
+      {p.children}
     </Page>
   )
 }

@@ -35,11 +35,16 @@ public class LancamentoService {
 
     private final LancamentoRepo lancamentos;
     private final CategoriaRepo categorias;
+    private final CategoriaGasto categoriaGasto;
+    private final CartaoService cartoes;
     private final Clock clock;
 
-    public LancamentoService(LancamentoRepo lancamentos, CategoriaRepo categorias, Clock clock) {
+    public LancamentoService(LancamentoRepo lancamentos, CategoriaRepo categorias, CategoriaGasto categoriaGasto,
+                             CartaoService cartoes, Clock clock) {
         this.lancamentos = lancamentos;
         this.categorias = categorias;
+        this.categoriaGasto = categoriaGasto;
+        this.cartoes = cartoes;
         this.clock = clock;
     }
 
@@ -142,6 +147,14 @@ public class LancamentoService {
             for (int i = 0; i < 12; i++) soma = soma.add(g.valorEm(ini.plusMonths(i)));
             totais.merge(l.categoria, soma, BigDecimal::add);
         }
+        // A fatura do cartão é gasto fixo: entra em FIXOS e no total, nunca em EVENTUAIS.
+        if (grupo == null || grupo == GrupoLancamento.FIXOS) {
+            for (CartaoService.GastoCategoria gc : cartoes.gastosPorCategoria()) {
+                BigDecimal soma = BigDecimal.ZERO;
+                for (int i = 0; i < 12; i++) soma = soma.add(gc.gasto().valorEm(ini.plusMonths(i)));
+                totais.merge(gc.categoria(), soma, BigDecimal::add);
+            }
+        }
         List<CategoriaResumoDto> cats = totais.entrySet().stream()
                 .map(e -> new CategoriaResumoDto(e.getKey(),
                         Dinheiro.arredondar(e.getValue().divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))))
@@ -200,6 +213,9 @@ public class LancamentoService {
         if (lancamentos.countByCategoriaAndDeletadoEmIsNull(nome) > 0) {
             throw new RegraDeNegocio("Há lançamentos usando a categoria '" + nome + "'.");
         }
+        if (cartoes.categoriaEmUso(nome)) {
+            throw new RegraDeNegocio("Há compras de cartão usando a categoria '" + nome + "'.");
+        }
         categorias.deleteById(nome);
     }
 
@@ -207,9 +223,7 @@ public class LancamentoService {
 
     /** A reserva tem aba própria (Metas); não existe mais como categoria de gasto. */
     private static void recusarCategoriaReservada(String nome) {
-        if ("Reserva".equalsIgnoreCase(nome)) {
-            throw new RegraDeNegocio("'Reserva' não é categoria de gasto: use a aba Metas.");
-        }
+        CategoriaGasto.recusarReservada(nome);
     }
 
     private Lancamento entidade(Long id) {
@@ -217,14 +231,7 @@ public class LancamentoService {
     }
 
     private void aplicar(Lancamento l, LancamentoDto d) {
-        String cat = d.categoria().trim();
-        recusarCategoriaReservada(cat);
-        if (!categorias.existsById(cat)) {
-            Categoria c = new Categoria();
-            c.nome = cat;
-            c.ordem = (int) categorias.count() + 1;
-            categorias.save(c);
-        }
+        String cat = categoriaGasto.garantir(d.categoria());
         l.descricao = d.descricao().trim();
         l.categoria = cat;
         l.tipo = d.tipo();
