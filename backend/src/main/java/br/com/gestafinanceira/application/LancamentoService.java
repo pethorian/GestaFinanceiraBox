@@ -9,6 +9,7 @@ import br.com.gestafinanceira.application.Erros.NaoEncontrado;
 import br.com.gestafinanceira.application.Erros.RegraDeNegocio;
 import br.com.gestafinanceira.domain.modelo.GastoCalculo;
 import br.com.gestafinanceira.domain.modelo.GrupoGasto;
+import br.com.gestafinanceira.domain.modelo.GrupoLancamento;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Categoria;
 import br.com.gestafinanceira.infra.persistencia.Entidades.Lancamento;
@@ -84,9 +85,14 @@ public class LancamentoService {
 
     /** Nova linha de gasto com os valores padrão definidos pelo servidor (mês atual, primeira categoria). */
     public LancamentoDto criarNovo() {
+        return criarNovo(TipoLancamento.RECORRENTE);
+    }
+
+    /** Idem, com o tipo escolhido (a aba Gastos eventuais cria PONTUAL). */
+    public LancamentoDto criarNovo(TipoLancamento tipo) {
         String categoria = categorias.findAllByOrderByOrdemAscNomeAsc().stream().findFirst()
                 .map(c -> c.nome).orElse("Outros");
-        return criar(new LancamentoDto(null, "Novo gasto", categoria, TipoLancamento.RECORRENTE,
+        return criar(new LancamentoDto(null, "Novo gasto", categoria, tipo,
                 BigDecimal.ZERO, YearMonth.now(clock), 0));
     }
 
@@ -121,10 +127,16 @@ public class LancamentoService {
 
     /** Média mensal por categoria nos 12 meses a partir de inicio (padrão: mês atual). */
     public ResumoGastosDto resumoPorCategoria(YearMonth inicio) {
+        return resumoPorCategoria(inicio, null);
+    }
+
+    /** Idem, só com os lançamentos do grupo (null = todos). */
+    public ResumoGastosDto resumoPorCategoria(YearMonth inicio, GrupoLancamento grupo) {
         expirarPontuaisVencidos();
         YearMonth ini = inicio != null ? inicio : YearMonth.now(clock);
         Map<String, BigDecimal> totais = new LinkedHashMap<>();
         for (Lancamento l : lancamentos.findAllByDeletadoEmIsNullOrderByIdAsc()) {
+            if (grupo != null && !grupo.contem(l.tipo)) continue;
             GastoCalculo g = new GastoCalculo(l.tipo, l.valor, YearMonth.from(l.mesInicial), l.parcelas);
             BigDecimal soma = BigDecimal.ZERO;
             for (int i = 0; i < 12; i++) soma = soma.add(g.valorEm(ini.plusMonths(i)));
