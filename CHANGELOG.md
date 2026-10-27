@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 
 ## [Não lançado]
 
+### Corrigido
+- Campo de data da aba PLR (e demais campos de data) com tema escuro e texto legível; mais espaço entre os cards de gastos fixos e de cartões de crédito.
+
 ### Adicionado
 - Aba "Cartão de crédito": cadastro de cartões (fechamento, vencimento e limite) e de todas as compras (à vista, parceladas ou assinaturas); a fatura de cada mês entra nos gastos fixos, na projeção, na média por categoria e na Saúde financeira, com limite disponível e faturas dos próximos 12 meses. Em Gastos fixos, um card lista os cartões e permite cadastrar um novo.
 - Aba "PLR" com o controle do PLR recebido: registre o que já caiu na conta e os gastos feitos com ele, divida em envelopes (os destinos do plano de uso do PLR, com sugestão 80/20) e veja quanto foi alocado, gasto e quanto sobra em cada um. O controle não altera a projeção. A aba "13º, férias e PLR" passa a se chamar "13º e férias".
