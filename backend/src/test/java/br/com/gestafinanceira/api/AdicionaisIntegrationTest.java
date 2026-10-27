@@ -245,6 +245,35 @@ class AdicionaisIntegrationTest {
     }
 
     @Test
+    void previsaoDaMetaSomaAReservaDoDecimo() throws Exception {
+        String metaId = ler(json(post("/api/metas"), """
+                {"nome": "Viagem", "valorAlvo": 5000, "valorAtual": 0, "aporteMensal": 100}""")
+                .andExpect(status().isCreated())).get("id").asText();
+        // só aportes: 50 meses, além da projeção
+        mvc.perform(get("/api/metas/" + metaId))
+                .andExpect(jsonPath("$.mesesParaAtingir", is(50)))
+                .andExpect(jsonPath("$.guardadoFimProjecao", is(1200.0)));
+
+        putDestinos("decimo", "[{\"nome\": \"Viagem\", \"tipo\": \"RESERVA\", \"percentual\": 100, \"metaId\": " + metaId + "}]")
+                .andExpect(status().isOk());
+        JsonNode proj = projecao();
+        List<BigDecimal> guardado = new ArrayList<>();
+        for (JsonNode mes : proj.get("meses")) {
+            for (JsonNode m : mes.get("metas")) if (m.get("id").asText().equals(metaId)) guardado.add(v(m.get("guardado")));
+        }
+        JsonNode meta = ler(mvc.perform(get("/api/metas/" + metaId)).andExpect(status().isOk()));
+        // a aba Metas mostra o mesmo saldo da projeção (aportes + reserva do 13º)
+        assertThat(v(meta.get("guardadoFimProjecao"))).isEqualByComparingTo(guardado.get(11));
+        assertThat(guardado.get(11)).isGreaterThan(new BigDecimal("1200"));
+        // a conclusão é o primeiro mês da projeção em que o guardado chega ao alvo
+        int i = 0;
+        while (i < 12 && guardado.get(i).compareTo(new BigDecimal("5000")) < 0) i++;
+        assertThat(i).as("o 13º de novembro e fevereiro somam mais que o alvo").isLessThan(12);
+        assertThat(meta.get("mesesParaAtingir").asInt()).isEqualTo(i + 1);
+        assertThat(meta.get("previsao").asText()).isEqualTo(proj.get("meses").get(i).get("competencia").asText());
+    }
+
+    @Test
     void metaApagadaViraReservaDosAdicionais() throws Exception {
         String metaId = criarMeta("Viagem");
         putDestinos("decimo", "[{\"nome\": \"Viagem\", \"tipo\": \"RESERVA\", \"percentual\": 40, \"metaId\": " + metaId + "}]")

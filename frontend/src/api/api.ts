@@ -77,6 +77,7 @@ export const api = {
   salvarLancamento: (l: Lancamento) => http.put<Lancamento>(`/api/lancamentos/${l.id}`, l),
   removerLancamento: (id: number) => http.delete(`/api/lancamentos/${id}`),
 
+  metas: () => http.get<Meta[]>('/api/metas'),
   novaMeta: () => http.post<Meta>('/api/metas/novo'),
   salvarMeta: (id: number, m: MetaEntrada) => http.put<Meta>(`/api/metas/${id}`, m),
   removerMeta: (id: number) => http.delete(`/api/metas/${id}`),

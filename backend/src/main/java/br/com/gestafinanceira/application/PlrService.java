@@ -11,6 +11,7 @@ import br.com.gestafinanceira.infra.persistencia.Entidades.CargoValor;
 import br.com.gestafinanceira.infra.persistencia.Entidades.EventoSalarial;
 import br.com.gestafinanceira.infra.persistencia.EventoRepo;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,13 +33,15 @@ public class PlrService {
     private final PerfilService perfil;
     private final CargoValorRepo cargoValores;
     private final ParametrosService parametros;
+    private final Clock clock;
 
     public PlrService(EventoRepo eventos, PerfilService perfil, CargoValorRepo cargoValores,
-                      ParametrosService parametros) {
+                      ParametrosService parametros, Clock clock) {
         this.eventos = eventos;
         this.perfil = perfil;
         this.cargoValores = cargoValores;
         this.parametros = parametros;
+        this.clock = clock;
     }
 
     /** Parcelas e valores calculados com a estimativa e a tabela de IR de hoje (também quando inativo, como prévia). */
@@ -46,7 +49,7 @@ public class PlrService {
     public PlrDto buscar() {
         List<ParcelaPlr> lista = listar();
         BigDecimal estimativa = estimativaAnual();
-        List<ParcelaCalculada> calc = CalculadoraPlr.calcular(lista, estimativa, parametros.faixasPlr(LocalDate.now()));
+        List<ParcelaCalculada> calc = CalculadoraPlr.calcular(lista, estimativa, parametros.faixasPlr(LocalDate.now(clock)));
         List<ParcelaPlrDto> dtos = new ArrayList<>();
         for (int i = 0; i < lista.size(); i++) {
             ParcelaPlr p = lista.get(i);
@@ -126,10 +129,6 @@ public class PlrService {
         eventos.flush();
     }
 
-    private static boolean usado(List<ParcelaPlr> parcelas, int mes) {
-        return parcelas.stream().anyMatch(p -> p.mes() == mes);
-    }
-
     private static BigDecimal soma(List<ParcelaPlr> parcelas) {
         return parcelas.stream().map(ParcelaPlr::percentual).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -137,7 +136,7 @@ public class PlrService {
     /** PLR anual do cargo do perfil, na vigência de hoje (ou a mais antiga se todas começam depois). */
     private BigDecimal estimativaAnual() {
         Long cargoId = perfil.entidade().cargoId;
-        CargoValor v = cargoValores.vigente(cargoId, LocalDate.now()).or(() -> cargoValores.maisAntigo(cargoId))
+        CargoValor v = cargoValores.vigente(cargoId, LocalDate.now(clock)).or(() -> cargoValores.maisAntigo(cargoId))
                 .orElse(null);
         return v != null && v.plrAnual != null ? v.plrAnual : BigDecimal.ZERO;
     }

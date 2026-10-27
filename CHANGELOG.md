@@ -5,6 +5,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Não lançado]
 
 ### Corrigido
+- Aba Metas: o saldo previsto ao fim dos 12 meses e a previsão de conclusão passam a vir da projeção, somando as reservas do plano de uso do 13º/PLR ligadas à meta (antes a aba Metas mostrava um valor diferente do da Projeção).
+- Ao mudar perfil, gastos, 13º/PLR ou plano de uso, as abas Metas e PLR passam a mostrar os valores recalculados sem precisar recarregar a página (antes só a projeção, os resumos e a Saúde financeira eram atualizados).
+- Aba PLR: a estimativa anual do cargo é o valor bruto (o rótulo dizia "líquido").
+- Gasto parcelado: o campo de parcelas na tela começa em 2, o mínimo aceito pelo servidor.
 - Fatura do cartão: com vencimento depois do fechamento, a fatura vence no mesmo mês em que fecha (fecha 13/11, vence 23/11, com as compras de 13/10 a 12/11), e a projeção lança o cartão no mês em que a fatura é paga (antes ia para o mês seguinte e o mês do pagamento ficava zerado). "Fatura atual" é a fatura aberta, que recebe as compras de hoje, e o limite disponível considera as faturas ainda por pagar.
 - Campo de data da aba PLR (e demais campos de data) com tema escuro e texto legível; mais espaço entre os cards de gastos fixos e de cartões de crédito.
 
