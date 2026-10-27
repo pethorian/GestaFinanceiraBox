@@ -141,15 +141,15 @@ class CartaoIntegrationTest {
     @Test
     void comprasTemCalculadosEFaturasMostramParcelasComResto() throws Exception {
         long id = criarCartao("null");
-        // 5/9 (< fechamento 10): fecha em set e vence em out (20/out). 100,00 em 3x: 33,34 + 33,33 + 33,33
-        JsonNode c = ler(postCompra(id, "PARCELADA", "2026-09-05", "100.00", 3, "Outros").andExpect(status().isCreated()));
+        // 5/10 (< fechamento 10): fecha em 10/out e vence em 20/out. 100,00 em 3x: 33,34 + 33,33 + 33,33
+        JsonNode c = ler(postCompra(id, "PARCELADA", "2026-10-05", "100.00", 3, "Outros").andExpect(status().isCreated()));
         assertEquals("2026-10", c.get("primeiraFatura").asText());
         assertEquals("2026-12", c.get("ultimaFatura").asText());
         assertEquals(0, new BigDecimal("33.33").compareTo(c.get("valorParcela").decimalValue()));
         assertEquals(3, c.get("parcelasRestantes").asInt());
 
-        JsonNode a = ler(postCompra(id, "ASSINATURA", "2026-09-12", "30.00", 0, "Lazer").andExpect(status().isCreated()));
-        // dia 12 >= 10: cai na fatura que fecha em outubro e vence em novembro
+        JsonNode a = ler(postCompra(id, "ASSINATURA", "2026-10-12", "30.00", 0, "Lazer").andExpect(status().isCreated()));
+        // dia 12 >= 10: cai na fatura que fecha em 10/nov e vence em 20/nov
         assertEquals("2026-11", a.get("primeiraFatura").asText());
         assertEquals(true, a.get("ultimaFatura").isNull());
         assertEquals(true, a.get("parcelasRestantes").isNull());
@@ -176,7 +176,7 @@ class CartaoIntegrationTest {
         long id = criarCartao("null");
         long compra = ler(postCompra(id, "A_VISTA", "2026-09-05", "100.00", 0, "Outros")).get("id").asLong();
         json(put("/api/cartoes/compras/" + compra), """
-                {"descricao": "Editada", "categoria": "Lazer", "tipo": "PARCELADA", "dataCompra": "2026-09-12",
+                {"descricao": "Editada", "categoria": "Lazer", "tipo": "PARCELADA", "dataCompra": "2026-10-12",
                  "valor": 200.00, "parcelas": 4}""").andExpect(status().isOk())
                 .andExpect(jsonPath("$.descricao").value("Editada"))
                 .andExpect(jsonPath("$.primeiraFatura").value("2026-11"))
@@ -190,8 +190,8 @@ class CartaoIntegrationTest {
     void projecaoIncluiAFaturaNoMesCerto() throws Exception {
         BigDecimal out = gastoDoMes(0), nov = gastoDoMes(1), dez = gastoDoMes(2);
         long id = criarCartao("null");
-        // 5/set fecha em set e vence em out (20/out); 100,00 em 3x => out 33,34; nov e dez 33,33
-        postCompra(id, "PARCELADA", "2026-09-05", "100.00", 3, "Outros").andExpect(status().isCreated());
+        // 5/out fecha em 10/out e vence em 20/out; 100,00 em 3x => out 33,34; nov e dez 33,33
+        postCompra(id, "PARCELADA", "2026-10-05", "100.00", 3, "Outros").andExpect(status().isCreated());
         assertEquals(0, new BigDecimal("33.34").compareTo(gastoDoMes(0).subtract(out)));
         assertEquals(0, new BigDecimal("33.33").compareTo(gastoDoMes(1).subtract(nov)));
         assertEquals(0, new BigDecimal("33.33").compareTo(gastoDoMes(2).subtract(dez)));
@@ -237,14 +237,15 @@ class CartaoIntegrationTest {
 
     @Test
     void limiteDisponivelEFaturasAtualEProxima() throws Exception {
-        // hoje é 15/10: a fatura atual é a aberta (fecha em 10/11, vence em dez) e a próxima, a de jan
+        // hoje é 15/10: a fatura atual é a aberta (fecha em 10/11, vence em 20/11) e a próxima, a de dez;
+        // a de out (fechou em 10/10, vence em 20/10) ainda está por pagar e entra no comprometido
         long id = criarCartao("1000.00");
-        postCompra(id, "PARCELADA", "2026-09-05", "600.00", 3, "Outros").andExpect(status().isCreated()); // 200 x3
-        postCompra(id, "ASSINATURA", "2026-09-05", "30.00", 0, "Lazer").andExpect(status().isCreated());
-        postCompra(id, "A_VISTA", "2026-08-05", "70.00", 0, "Outros").andExpect(status().isCreated()); // venceu em set (fechou em ago)
+        postCompra(id, "PARCELADA", "2026-10-05", "600.00", 3, "Outros").andExpect(status().isCreated()); // out, nov, dez
+        postCompra(id, "ASSINATURA", "2026-10-12", "30.00", 0, "Lazer").andExpect(status().isCreated()); // a partir de nov
+        postCompra(id, "A_VISTA", "2026-09-05", "70.00", 0, "Outros").andExpect(status().isCreated()); // venceu em 20/set
         mvc.perform(get("/api/cartoes")).andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id==" + id + ")].faturaAtual").value(230.0))
-                .andExpect(jsonPath("$[?(@.id==" + id + ")].proximaFatura").value(30.0))
+                .andExpect(jsonPath("$[?(@.id==" + id + ")].proximaFatura").value(230.0))
                 .andExpect(jsonPath("$[?(@.id==" + id + ")].comprometido").value(600.0))
                 .andExpect(jsonPath("$[?(@.id==" + id + ")].limiteDisponivel").value(400.0));
     }

@@ -15,8 +15,9 @@ import java.util.List;
  * Regras de fatura do cartão (cálculo puro).
  *
  * <p>Fechamento: compra com dia &gt;= dia de fechamento cai na fatura que fecha no mês seguinte; senão, na que fecha
- * no mês da compra. Dia de fechamento/vencimento maior que o último dia do mês vale o último dia. Vencimento:
- * sempre no mês seguinte ao do fechamento (fecha 13/10, vence 23/11). Parcelas:
+ * no mês da compra. Dia de fechamento/vencimento maior que o último dia do mês vale o último dia. Vencimento: se
+ * {@code diaVencimento > diaFechamento}, no mês do fechamento (fecha 13/11, vence 23/11); senão, no mês seguinte
+ * (fecha 25/11, vence 5/12). Parcelas:
  * {@code total / n} HALF_UP com 2 casas, e a diferença de arredondamento vai na primeira parcela.
  */
 public final class CalculadoraFatura {
@@ -29,9 +30,10 @@ public final class CalculadoraFatura {
         return dataCompra.getDayOfMonth() >= fechamento ? mesCompra.plusMonths(1) : mesCompra;
     }
 
-    /** Mês de vencimento da primeira fatura da compra: sempre o mês seguinte ao do fechamento. */
+    /** Mês de vencimento da primeira fatura da compra. */
     public static YearMonth primeiraFatura(LocalDate dataCompra, int diaFechamento, int diaVencimento) {
-        return mesFechamento(dataCompra, diaFechamento).plusMonths(1);
+        YearMonth fechamento = mesFechamento(dataCompra, diaFechamento);
+        return diaVencimento > diaFechamento ? fechamento : fechamento.plusMonths(1);
     }
 
     /** Fatura aberta: a que recebe as compras de hoje (ainda não fechou). */
