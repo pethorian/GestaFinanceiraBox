@@ -65,7 +65,7 @@ export function ListaGastos(p: ListaGastosProps) {
                       )}
                       <input type="month" value={g.mesInicial} aria-label="Mês" onChange={(e) => e.target.value && p.onEditar(id, { mesInicial: e.target.value })} />
                       {fixos && (g.tipo === 'PARCELADO'
-                        ? <NumberInput stepper min={1} max={60} value={g.parcelas} aria-label="Parcelas" onChange={(v) => p.onEditar(id, { parcelas: v })} />
+                        ? <NumberInput stepper min={2} max={60} value={g.parcelas} aria-label="Parcelas" onChange={(v) => p.onEditar(id, { parcelas: v })} />
                         : <span />)}
                       <NumberInput prefix="R$" min={0} step={10} value={g.valor} aria-label="Valor" onChange={(v) => p.onEditar(id, { valor: v })} />
                       <button className="btn x ghost" onClick={() => p.onRemover(id)} aria-label={`Remover ${g.descricao}`} title="Remover"><Icon name="close" size={14} /></button>

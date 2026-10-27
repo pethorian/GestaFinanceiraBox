@@ -291,7 +291,7 @@ export function Plr() {
                 </table>
               </div>
               <div className="plr-rodape">
-                <span>Estimativa anual do cargo: {fmt(plr.estimativaAnual)} (líquido). Valor vazio usa o calculado.</span>
+                <span>Estimativa anual do cargo: {fmt(plr.estimativaAnual)} (bruto). Valor vazio usa o calculado.</span>
                 {plr.aviso ? <span className="warn">{plr.aviso}</span> : <span className="ok">✓ {plr.totalPercentual}% distribuído.</span>}
               </div>
             </>

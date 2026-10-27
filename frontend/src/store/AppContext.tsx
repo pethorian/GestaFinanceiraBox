@@ -22,6 +22,37 @@ export function mensagensErroDestinos(e: unknown): string[] {
 }
 
 /**
+ * PLR da tela com os campos calculados pelo back end (bruto, desconto, líquido, aviso, estimativa); o que o usuário
+ * digita (ativo, mês, percentual, valor) continua como está na tela. As parcelas são casadas pela posição.
+ */
+export function comCalculosPlr(tela: Plr, salvo: Plr): Plr {
+  return {
+    ...tela,
+    totalPercentual: salvo.totalPercentual,
+    aviso: salvo.aviso,
+    estimativaAnual: salvo.estimativaAnual,
+    parcelas: tela.parcelas.map((p, i) => {
+      const calc = salvo.parcelas[i]
+      return calc ? { ...p, valorBruto: calc.valorBruto, desconto: calc.desconto, valorLiquido: calc.valorLiquido } : p
+    }),
+  }
+}
+
+/** Metas da tela com os campos calculados pelo back end (falta, percentual, previsão, saldo previsto), casadas pelo id. */
+export function comCalculosMetas(tela: Meta[], salvas: Meta[]): Meta[] {
+  const porId = new Map(salvas.map((m) => [m.id, m]))
+  return tela.map((m) => {
+    const s = porId.get(m.id)
+    return s
+      ? {
+        ...m, falta: s.falta, percentual: s.percentual, mesesParaAtingir: s.mesesParaAtingir, previsao: s.previsao,
+        guardadoFimProjecao: s.guardadoFimProjecao, fimProjecao: s.fimProjecao,
+      }
+      : m
+  })
+}
+
+/**
  * Estado da aplicação. Tudo vem do back end: dados do usuário (banco), projeção e demais cálculos.
  * As telas editam o estado local (para a digitação não travar), e as alterações são enviadas ao back end
  * com um pequeno atraso. Depois de salvar, a projeção e os resumos são recalculados pelo back end.
@@ -126,12 +157,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** Pede ao back end a projeção e os resumos atualizados (ignora respostas antigas). */
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
-    const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr, cartoes, categorias] = await Promise.all([
+    const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr, cartoes, categorias, metas] = await Promise.all([
       api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.plr(), api.saudeFinanceira(periodoSaude.current),
-      api.planoAdicional('decimo'), api.planoAdicional('plr'), api.cartoes(), api.categorias(),
+      api.planoAdicional('decimo'), api.planoAdicional('plr'), api.cartoes(), api.categorias(), api.metas(),
     ])
     if (minha === seqCalculos.current) {
-      // a estimativa anual do PLR depende do cargo do perfil; as parcelas digitadas continuam como estão na tela.
       // A saúde financeira depende da renda, dos gastos e dos aportes: volta inteira do servidor.
       setCarga((c) => (c ? {
         ...c, projecao, mesComum, resumoFixos, resumoEventuais, cartoes,
@@ -139,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         categorias,
         // o plano de uso (prévia, ativo, nome das metas) depende do salário, dos eventos e das metas: volta inteiro
         dados: {
-          ...c.dados, saudeFinanceira, plr: { ...c.dados.plr, estimativaAnual: plr.estimativaAnual },
+          ...c.dados, saudeFinanceira, plr: comCalculosPlr(c.dados.plr, plr), metas: comCalculosMetas(c.dados.metas, metas),
           adicionais: { decimo: planoDecimo, plr: planoPlr },
         },
       } : c))
@@ -205,19 +235,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const atual = cargaRef.current!.dados.plr
         const salvo: Plr = await api.salvarPlr({ ativo: atual.ativo, parcelas: atual.parcelas })
         // só os campos calculados pelo back end; os digitados continuam como estão na tela
-        mudar((d) => ({
-          ...d,
-          plr: {
-            ...d.plr,
-            totalPercentual: salvo.totalPercentual,
-            aviso: salvo.aviso,
-            estimativaAnual: salvo.estimativaAnual,
-            parcelas: d.plr.parcelas.map((p, i) => {
-              const calc = salvo.parcelas[i]
-              return calc ? { ...p, valorBruto: calc.valorBruto, desconto: calc.desconto, valorLiquido: calc.valorLiquido } : p
-            }),
-          },
-        }))
+        mudar((d) => ({ ...d, plr: comCalculosPlr(d.plr, salvo) }))
       })
     },
     editarBonus: (patch: Partial<Bonus>) => {
@@ -257,15 +275,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!atual) return
         const salva: Meta = await api.salvarMeta(id, atual)
         // só os campos calculados pelo back end; os digitados continuam como estão na tela
-        mudar((d) => ({
-          ...d,
-          metas: d.metas.map((m) => (m.id === id
-            ? {
-              ...m, falta: salva.falta, percentual: salva.percentual, mesesParaAtingir: salva.mesesParaAtingir,
-              previsao: salva.previsao, guardadoFimProjecao: salva.guardadoFimProjecao, fimProjecao: salva.fimProjecao,
-            }
-            : m)),
-        }))
+        mudar((d) => ({ ...d, metas: comCalculosMetas(d.metas, [salva]) }))
       })
     },
     removerMeta: (id: number) => executar(async () => {
