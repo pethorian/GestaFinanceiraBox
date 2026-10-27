@@ -87,8 +87,8 @@ public final class Dtos {
     }
 
     /**
-     * {@code faturaAtual}/{@code proximaFatura}: total das faturas que vencem no mês atual e no seguinte.
-     * {@code comprometido}: parcelas com vencimento a partir do mês atual (sem assinaturas).
+     * {@code faturaAtual}/{@code proximaFatura}: total da fatura aberta (a que recebe as compras de hoje) e da seguinte.
+     * {@code comprometido}: parcelas das faturas ainda por pagar, com vencimento hoje ou depois (sem assinaturas).
      * {@code limiteDisponivel}: limite menos comprometido (nulo sem limite).
      */
     public record CartaoDto(

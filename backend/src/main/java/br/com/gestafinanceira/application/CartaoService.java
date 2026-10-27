@@ -18,6 +18,7 @@ import br.com.gestafinanceira.infra.persistencia.EntidadesCartao.Cartao;
 import br.com.gestafinanceira.infra.persistencia.EntidadesCartao.CompraCartao;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -127,11 +128,11 @@ public class CartaoService {
 
     // ---- faturas ------------------------------------------------------------------------------
 
-    /** Faturas que vencem nos 12 meses a partir de {@code inicio} (padrão: mês atual). */
+    /** Faturas que vencem nos 12 meses a partir de {@code inicio} (padrão: a primeira ainda por pagar). */
     @Transactional(readOnly = true)
     public List<Fatura> faturas(Long cartaoId, YearMonth inicio) {
         Cartao c = cartao(cartaoId);
-        YearMonth ini = inicio != null ? inicio : YearMonth.now(clock);
+        YearMonth ini = inicio != null ? inicio : faturaAPagar(c);
         List<CompraCartaoCalculo> calc = compras.findAllByCartaoIdAndDeletadoEmIsNullOrderByDataCompraAscIdAsc(cartaoId)
                 .stream().map(CartaoService::paraCalculo).toList();
         List<Fatura> r = new ArrayList<>();
@@ -216,14 +217,16 @@ public class CartaoService {
     }
 
     private CartaoDto paraDto(Cartao c, List<CompraCartao> doCartao) {
-        YearMonth atual = YearMonth.now(clock);
+        LocalDate hoje = LocalDate.now(clock);
+        YearMonth aberta = CalculadoraFatura.faturaAberta(hoje, c.diaFechamento, c.diaVencimento);
+        YearMonth aPagar = faturaAPagar(c);
         List<CompraCartaoCalculo> calc = doCartao.stream().map(CartaoService::paraCalculo).toList();
-        BigDecimal fatura = CalculadoraFatura.fatura(calc, c.diaFechamento, c.diaVencimento, atual).total();
-        BigDecimal proxima = CalculadoraFatura.fatura(calc, c.diaFechamento, c.diaVencimento, atual.plusMonths(1)).total();
+        BigDecimal fatura = CalculadoraFatura.fatura(calc, c.diaFechamento, c.diaVencimento, aberta).total();
+        BigDecimal proxima = CalculadoraFatura.fatura(calc, c.diaFechamento, c.diaVencimento, aberta.plusMonths(1)).total();
         BigDecimal comprometido = Dinheiro.ZERO;
         for (CompraCartaoCalculo x : calc) {
             YearMonth primeira = CalculadoraFatura.primeiraFatura(x.dataCompra(), c.diaFechamento, c.diaVencimento);
-            comprometido = comprometido.add(CalculadoraFatura.comprometido(x, primeira, atual));
+            comprometido = comprometido.add(CalculadoraFatura.comprometido(x, primeira, aPagar));
         }
         comprometido = Dinheiro.arredondar(comprometido);
         BigDecimal disponivel = c.limite != null ? Dinheiro.arredondar(c.limite.subtract(comprometido)) : null;
@@ -236,6 +239,11 @@ public class CartaoService {
         YearMonth primeira = CalculadoraFatura.primeiraFatura(x.dataCompra, c.diaFechamento, c.diaVencimento);
         return new CompraDto(x.id, x.cartaoId, x.descricao, x.categoria, x.tipo, x.dataCompra, x.valor, x.parcelas,
                 CalculadoraFatura.valorParcela(calc), primeira, CalculadoraFatura.ultimaFatura(calc, primeira),
-                CalculadoraFatura.parcelasRestantes(calc, primeira, YearMonth.now(clock)));
+                CalculadoraFatura.parcelasRestantes(calc, primeira, faturaAPagar(c)));
+    }
+
+    /** Mês de vencimento da primeira fatura ainda por pagar (vence hoje ou depois). */
+    private YearMonth faturaAPagar(Cartao c) {
+        return CalculadoraFatura.faturaAPagar(LocalDate.now(clock), c.diaVencimento);
     }
 }

@@ -15,8 +15,8 @@ import java.util.List;
  * Regras de fatura do cartão (cálculo puro).
  *
  * <p>Fechamento: compra com dia &gt;= dia de fechamento cai na fatura que fecha no mês seguinte; senão, na que fecha
- * no mês da compra. Dia de fechamento/vencimento maior que o último dia do mês vale o último dia. Vencimento: se
- * {@code diaVencimento > diaFechamento}, no mês do fechamento; senão, no mês seguinte. Parcelas:
+ * no mês da compra. Dia de fechamento/vencimento maior que o último dia do mês vale o último dia. Vencimento:
+ * sempre no mês seguinte ao do fechamento (fecha 13/10, vence 23/11). Parcelas:
  * {@code total / n} HALF_UP com 2 casas, e a diferença de arredondamento vai na primeira parcela.
  */
 public final class CalculadoraFatura {
@@ -29,10 +29,24 @@ public final class CalculadoraFatura {
         return dataCompra.getDayOfMonth() >= fechamento ? mesCompra.plusMonths(1) : mesCompra;
     }
 
-    /** Mês de vencimento da primeira fatura da compra. */
+    /** Mês de vencimento da primeira fatura da compra: sempre o mês seguinte ao do fechamento. */
     public static YearMonth primeiraFatura(LocalDate dataCompra, int diaFechamento, int diaVencimento) {
-        YearMonth fechamento = mesFechamento(dataCompra, diaFechamento);
-        return diaVencimento > diaFechamento ? fechamento : fechamento.plusMonths(1);
+        return mesFechamento(dataCompra, diaFechamento).plusMonths(1);
+    }
+
+    /** Fatura aberta: a que recebe as compras de hoje (ainda não fechou). */
+    public static YearMonth faturaAberta(LocalDate hoje, int diaFechamento, int diaVencimento) {
+        return primeiraFatura(hoje, diaFechamento, diaVencimento);
+    }
+
+    /**
+     * Primeira fatura ainda por pagar (vence hoje ou depois), mesmo que já esteja fechada. Passado o dia de
+     * vencimento do mês, a fatura daquele mês já foi paga.
+     */
+    public static YearMonth faturaAPagar(LocalDate hoje, int diaVencimento) {
+        YearMonth mes = YearMonth.from(hoje);
+        int vencimento = Math.min(diaVencimento, mes.lengthOfMonth());
+        return hoje.getDayOfMonth() > vencimento ? mes.plusMonths(1) : mes;
     }
 
     /** Quantidade de faturas da compra; 0 = sem fim (assinatura). */
