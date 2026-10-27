@@ -4,10 +4,21 @@ import { DivisaoRendaChart, MetaAtualChart, StatusPill } from '../components/sau
 import { Card, Page, Segmented, Switch, cls } from '../components/ui'
 import { fmt } from '../domain/format'
 import { FAIXAS, GRUPOS, fmtPctFaixa } from '../domain/saude'
-import type { GrupoGasto, SaudeFinanceira as Saude } from '../domain/types'
+import type { GrupoGasto, PeriodoSaude, SaudeFinanceira as Saude } from '../domain/types'
 import { useApp } from '../store/AppContext'
 
 const TITULO_SWITCH = 'Quero seguir o método 50/30/20'
+
+const PERIODOS: { value: PeriodoSaude; label: string }[] = [
+  { value: 'MES_ATUAL', label: 'Mês atual' },
+  { value: 'MEDIA_12', label: 'Média de 12 meses' },
+]
+
+/** Como a tela descreve os gastos e aportes do período escolhido. */
+const NOTA_PERIODO: Record<PeriodoSaude, string> = {
+  MES_ATUAL: 'Gastos e aportes do mês atual.',
+  MEDIA_12: 'Média mensal dos próximos 12 meses.',
+}
 
 function Kpi({ icon, cor, titulo, valor, nota, classe = '' }: {
   icon: IconName; cor: string; titulo: string; valor: string; nota: string; classe?: string
@@ -152,7 +163,7 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
               </div>
             ))}
           </div>
-          <p className="dim sf-nota">Média mensal. Obrigatório → necessidades; lazer → desejos.</p>
+          <p className="dim sf-nota">{NOTA_PERIODO[saude.periodo]} Obrigatório → necessidades; lazer → desejos.</p>
         </Card>
 
         <AdicionaisSaude ad={saude.adicionais} frases={false} />
@@ -163,11 +174,18 @@ function Completa({ saude, onGrupo }: { saude: Saude; onGrupo: (nome: string, gr
 }
 
 /** Tela sem estado próprio: tudo chega por props (facilita testar). */
-export function SaudeFinanceiraView({ saude, onAlternar, onGrupo }: {
+export function SaudeFinanceiraView({ saude, onAlternar, onGrupo, onPeriodo }: {
   saude: Saude; onAlternar: (v: boolean) => void; onGrupo: (nome: string, grupo: GrupoGasto) => void
+  onPeriodo: (p: PeriodoSaude) => void
 }) {
+  const periodo = (
+    <div className="sf-periodo">
+      <Segmented name="periodo-saude" value={saude.periodo} options={PERIODOS} label="Período da saúde financeira" onChange={onPeriodo} />
+      <small className="dim">{NOTA_PERIODO[saude.periodo]}</small>
+    </div>
+  )
   return (
-    <Page fit title="Saúde financeira" subtitle="Seu mês comparado ao método 50/30/20: necessidades, desejos e poupança.">
+    <Page fit title="Saúde financeira" subtitle="Seu mês comparado ao método 50/30/20: necessidades, desejos e poupança." aside={periodo}>
       <div className={`sf${saude.participa ? ' on' : ''}`}>
         <Metodo saude={saude} onAlternar={onAlternar} />
         {saude.participa ? <Completa saude={saude} onGrupo={onGrupo} /> : <Convite saude={saude} onAlternar={onAlternar} />}
@@ -177,12 +195,13 @@ export function SaudeFinanceiraView({ saude, onAlternar, onGrupo }: {
 }
 
 export function SaudeFinanceira() {
-  const { dados, alternarMetodo, definirGrupoCategoria } = useApp()
+  const { dados, alternarMetodo, definirGrupoCategoria, definirPeriodoSaude } = useApp()
   return (
     <SaudeFinanceiraView
       saude={dados.saudeFinanceira}
       onAlternar={(v) => void alternarMetodo(v)}
       onGrupo={(nome, g) => void definirGrupoCategoria(nome, g)}
+      onPeriodo={(p) => void definirPeriodoSaude(p)}
     />
   )
 }

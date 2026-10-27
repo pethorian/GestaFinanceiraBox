@@ -137,6 +137,11 @@ public class LancamentoService {
 
     /** Idem, só com os lançamentos do grupo (null = todos). */
     public ResumoGastosDto resumoPorCategoria(YearMonth inicio, GrupoLancamento grupo) {
+        return resumoPorCategoria(inicio, grupo, 12);
+    }
+
+    /** Idem, com a média dos {@code meses} meses a partir de inicio (1 = só o mês de início). */
+    public ResumoGastosDto resumoPorCategoria(YearMonth inicio, GrupoLancamento grupo, int meses) {
         expirarPontuaisVencidos();
         YearMonth ini = inicio != null ? inicio : YearMonth.now(clock);
         Map<String, BigDecimal> totais = new LinkedHashMap<>();
@@ -144,20 +149,20 @@ public class LancamentoService {
             if (grupo != null && !grupo.contem(l.tipo)) continue;
             GastoCalculo g = new GastoCalculo(l.tipo, l.valor, YearMonth.from(l.mesInicial), l.parcelas);
             BigDecimal soma = BigDecimal.ZERO;
-            for (int i = 0; i < 12; i++) soma = soma.add(g.valorEm(ini.plusMonths(i)));
+            for (int i = 0; i < meses; i++) soma = soma.add(g.valorEm(ini.plusMonths(i)));
             totais.merge(l.categoria, soma, BigDecimal::add);
         }
         // A fatura do cartão é gasto fixo: entra em FIXOS e no total, nunca em EVENTUAIS.
         if (grupo == null || grupo == GrupoLancamento.FIXOS) {
             for (CartaoService.GastoCategoria gc : cartoes.gastosPorCategoria()) {
                 BigDecimal soma = BigDecimal.ZERO;
-                for (int i = 0; i < 12; i++) soma = soma.add(gc.gasto().valorEm(ini.plusMonths(i)));
+                for (int i = 0; i < meses; i++) soma = soma.add(gc.gasto().valorEm(ini.plusMonths(i)));
                 totais.merge(gc.categoria(), soma, BigDecimal::add);
             }
         }
         List<CategoriaResumoDto> cats = totais.entrySet().stream()
                 .map(e -> new CategoriaResumoDto(e.getKey(),
-                        Dinheiro.arredondar(e.getValue().divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))))
+                        Dinheiro.arredondar(e.getValue().divide(BigDecimal.valueOf(meses), 10, RoundingMode.HALF_UP))))
                 .sorted(Comparator.comparing(CategoriaResumoDto::mediaMensal).reversed())
                 .toList();
         BigDecimal total = cats.stream().map(CategoriaResumoDto::mediaMensal).reduce(BigDecimal.ZERO, BigDecimal::add);

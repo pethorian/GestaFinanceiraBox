@@ -4,7 +4,7 @@ import { ApiError } from '../api/http'
 import type {
   Bonus, Categoria, Dados, Ferias, GrupoGasto, Lancamento, Meta, MesProjecao, MetaEntrada, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, ChaveAdicional, DestinoEntrada,
-  TipoLancamento, Cartao,
+  TipoLancamento, Cartao, PeriodoSaude,
 } from '../domain/types'
 
 /** Erros do plano de uso por evento (null = sem erro). Ficam na tela, sem desfazer o que o usuário digitou. */
@@ -57,6 +57,8 @@ interface AppCtx {
   restaurar: () => Promise<void>
   /** adere (ou não) ao método 50/30/20 da aba Saúde financeira */
   alternarMetodo: (participa: boolean) => Promise<void>
+  /** troca a base da saúde financeira (média de 12 meses ou mês atual); vale até recarregar a página */
+  definirPeriodoSaude: (periodo: PeriodoSaude) => Promise<void>
   /** classifica a categoria como obrigatória (NECESSIDADE) ou lazer (DESEJO) e recalcula a saúde financeira */
   definirGrupoCategoria: (nome: string, grupo: GrupoGasto) => Promise<void>
   /** grava alterações de parâmetros e recarrega tudo (as projeções dependem deles) */
@@ -102,9 +104,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   cargaRef.current = carga
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const seqCalculos = useRef(0)
+  // período escolhido na Saúde financeira; os recálculos pedem a saúde com ele
+  const periodoSaude = useRef<PeriodoSaude>('MEDIA_12')
 
   const carregarTudo = useCallback(async () => {
     try {
+      periodoSaude.current = 'MEDIA_12' // /api/dados traz a média de 12 meses
       const [dados, projecao, mesComum, resumoFixos, resumoEventuais, parametros, categorias, cartoes] = await Promise.all([
         api.dados(), api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.parametros(), api.categorias(),
         api.cartoes(),
@@ -122,7 +127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const recalcular = useCallback(async () => {
     const minha = ++seqCalculos.current
     const [projecao, mesComum, resumoFixos, resumoEventuais, plr, saudeFinanceira, planoDecimo, planoPlr, cartoes, categorias] = await Promise.all([
-      api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.plr(), api.saudeFinanceira(),
+      api.projecao(), api.mesComum(), api.resumoGastos("FIXOS"), api.resumoGastos("EVENTUAIS"), api.plr(), api.saudeFinanceira(periodoSaude.current),
       api.planoAdicional('decimo'), api.planoAdicional('plr'), api.cartoes(), api.categorias(),
     ])
     if (minha === seqCalculos.current) {
@@ -270,9 +275,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     alternarMetodo: (participa: boolean) => executar(async () => {
       mudar((d) => ({ ...d, saudeFinanceira: { ...d.saudeFinanceira, participa } }))
-      const saudeFinanceira = await api.salvarSaudeFinanceira(participa)
+      const saudeFinanceira = await api.salvarSaudeFinanceira(participa, periodoSaude.current)
       mudar((d) => ({ ...d, saudeFinanceira }))
     }),
+    definirPeriodoSaude: async (periodo: PeriodoSaude) => {
+      periodoSaude.current = periodo
+      mudar((d) => ({ ...d, saudeFinanceira: { ...d.saudeFinanceira, periodo } }))
+      try {
+        const saudeFinanceira = await api.saudeFinanceira(periodo)
+        if (periodoSaude.current === periodo) mudar((d) => ({ ...d, saudeFinanceira }))
+      } catch (e) {
+        await falhou(e)
+      }
+    },
     definirGrupoCategoria: (nome: string, grupo: GrupoGasto) => executar(async () => {
       // otimista: o controle muda na hora; os números chegam do back end no recálculo (executar → recalcular)
       setCarga((c) => (c ? {
@@ -340,7 +355,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAviso(mensagem(e))
       }
     },
-  }), [agendar, executar, mudar, carregarTudo, recalcular])
+  }), [agendar, executar, mudar, carregarTudo, recalcular, falhou])
 
   const valor = useMemo<AppCtx | null>(() => (carga ? {
     ...carga, ...acoes, salvando: pendentes > 0, aviso, limparAviso: () => setAviso(null), errosAdicionais,

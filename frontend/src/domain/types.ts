@@ -289,10 +289,15 @@ export interface CategoriaSaude {
   mediaMensal: number
 }
 
+/** Base dos gastos e da poupança: média dos 12 meses da projeção ou só o mês atual. */
+export type PeriodoSaude = 'MEDIA_12' | 'MES_ATUAL'
+
 /** Saúde financeira pelo método 50/30/20. Todos os números vêm prontos do back end. */
 export interface SaudeFinanceira {
   /** o usuário aderiu ao método (o cálculo é feito de qualquer forma) */
   participa: boolean
+  /** período dos gastos e da poupança (a renda é sempre a do mês comum) */
+  periodo: PeriodoSaude
   /** líquido de um mês comum */
   rendaMensal: number
   recomendado: Faixas<number>
