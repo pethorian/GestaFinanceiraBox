@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); 
 ## [Não lançado]
 
 ### Corrigido
+- Fatura do cartão: o vencimento passa a ser sempre no mês seguinte ao fechamento (fecha 13/10, vence 23/11; a que fecha em 13/11 vence em 23/12). "Fatura atual" é a fatura aberta, que recebe as compras de hoje, e o limite disponível considera as faturas ainda por pagar.
 - Campo de data da aba PLR (e demais campos de data) com tema escuro e texto legível; mais espaço entre os cards de gastos fixos e de cartões de crédito.
 
 ### Adicionado

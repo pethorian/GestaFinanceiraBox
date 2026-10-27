@@ -28,7 +28,7 @@ export function CartoesCard({ cartoes, onCadastrar, formAberto }: {
             <b>{c.nome}</b>
             <small className="dim">fecha dia {c.diaFechamento} · vence dia {c.diaVencimento}</small>
           </div>
-          <span className="num" title="Fatura que vence neste mês">{fmt(c.faturaAtual)}</span>
+          <span className="num" title="Fatura atual (aberta, ainda recebendo compras)">{fmt(c.faturaAtual)}</span>
           <a className="btn sm" href={`#/cartao?id=${c.id}`}>Ver compras</a>
         </div>
       ))}

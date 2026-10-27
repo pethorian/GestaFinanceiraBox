@@ -25,19 +25,43 @@ class CalculadoraFaturaTest {
     }
 
     @Test
-    void compraAntesDoFechamentoCaiNaFaturaDoMes() {
-        // fecha dia 10, vence dia 20 (mesmo mês do fechamento)
-        assertEquals(YearMonth.of(2026, 3), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 9), 10, 20));
+    void faturaAPagarEhAPrimeiraAindaPorVencer() {
+        // vence dia 23: em 27/10 a de outubro já venceu e a primeira a pagar é a de novembro
+        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.faturaAPagar(LocalDate.of(2026, 10, 27), 23));
+        assertEquals(YearMonth.of(2026, 10), CalculadoraFatura.faturaAPagar(LocalDate.of(2026, 10, 23), 23));
+        assertEquals(YearMonth.of(2026, 10), CalculadoraFatura.faturaAPagar(LocalDate.of(2026, 10, 5), 23));
+        // vencimento 31 em fevereiro vale o último dia do mês
+        assertEquals(YearMonth.of(2027, 2), CalculadoraFatura.faturaAPagar(LocalDate.of(2027, 2, 28), 31));
+    }
+
+    @Test
+    void compraAntesDoFechamentoVenceNoMesSeguinteAoFechamento() {
+        // fecha dia 10: compra em 9/3 fecha em 10/3 e vence em abril
+        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 9), 10, 20));
     }
 
     @Test
     void compraNoDiaDoFechamentoJaCaiNaProximaFatura() {
-        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 10), 10, 20));
+        assertEquals(YearMonth.of(2026, 5), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 10), 10, 20));
     }
 
     @Test
     void compraDepoisDoFechamentoCaiNaProximaFatura() {
-        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 25), 10, 20));
+        assertEquals(YearMonth.of(2026, 5), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 25), 10, 20));
+    }
+
+    @Test
+    void fechaDia13VenceDia23DoMesSeguinte() {
+        // a fatura que fecha em 13/10 vence em 23/11; a que fecha em 13/11 vence em 23/12
+        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 12), 13, 23));
+        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 13), 13, 23));
+        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 12), 13, 23));
+        assertEquals(YearMonth.of(2027, 1), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 13), 13, 23));
+    }
+
+    @Test
+    void faturaAbertaEhAQueRecebeAsComprasDeHoje() {
+        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.faturaAberta(LocalDate.of(2026, 10, 27), 13, 23));
     }
 
     @Test
@@ -50,8 +74,8 @@ class CalculadoraFaturaTest {
 
     @Test
     void viradaDeAno() {
-        // fecha dia 10 vence dia 20: compra em 15/12 fecha em jan e vence em jan
-        assertEquals(YearMonth.of(2027, 1), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 15), 10, 20));
+        // fecha dia 10 vence dia 20: compra em 15/12 fecha em jan e vence em fev
+        assertEquals(YearMonth.of(2027, 2), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 15), 10, 20));
         // fecha dia 25 vence dia 5: compra em 26/12 fecha em jan e vence em fev
         assertEquals(YearMonth.of(2027, 2), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 26), 25, 5));
         // fecha dia 25 vence dia 5: compra em 3/12 fecha em dez e vence em jan
@@ -66,7 +90,7 @@ class CalculadoraFaturaTest {
         // em março (31 dias) o dia 30 ainda fecha em março
         assertEquals(YearMonth.of(2026, 3), CalculadoraFatura.mesFechamento(LocalDate.of(2026, 3, 30), 31));
         assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.mesFechamento(LocalDate.of(2026, 3, 31), 31));
-        // fechamento 31 e vencimento 10: vence no mês seguinte ao fechamento
+        // fechamento 31: compra em 10/2 fecha em 28/2 e vence em março
         assertEquals(YearMonth.of(2026, 3), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 2, 10), 31, 10));
     }
 
@@ -143,15 +167,15 @@ class CalculadoraFaturaTest {
 
     @Test
     void faturaDeUmMesComItensRotulosETotal() {
-        // fecha dia 10, vence dia 20
+        // fecha dia 10, vence dia 20 (sempre no mês seguinte ao fechamento)
         List<CompraCartaoCalculo> compras = List.of(
                 new CompraCartaoCalculo(1L, "Notebook", "Pessoal", TipoCompra.PARCELADA, LocalDate.of(2026, 1, 5), d("1000.00"), 10),
                 new CompraCartaoCalculo(2L, "Streaming", "Lazer", TipoCompra.ASSINATURA, LocalDate.of(2026, 2, 1), d("39.90"), 0),
                 new CompraCartaoCalculo(3L, "Jantar", "Alimentação", TipoCompra.A_VISTA, LocalDate.of(2026, 3, 9), d("80.10"), 0),
                 new CompraCartaoCalculo(4L, "Fora do mês", "Outros", TipoCompra.A_VISTA, LocalDate.of(2026, 3, 20), d("50.00"), 0));
-        Fatura f = CalculadoraFatura.fatura(compras, 10, 20, YearMonth.of(2026, 3));
-        assertEquals(YearMonth.of(2026, 3), f.mes());
-        // notebook: 1ª fatura jan -> março é a 3/10; streaming: 1ª fatura fev -> recorrente; jantar: março
+        Fatura f = CalculadoraFatura.fatura(compras, 10, 20, YearMonth.of(2026, 4));
+        assertEquals(YearMonth.of(2026, 4), f.mes());
+        // notebook: 1ª fatura em fev -> abril é a 3/10; streaming: 1ª fatura em mar -> recorrente; jantar: abril
         assertEquals(3, f.itens().size());
         assertEquals("3/10", f.itens().get(0).parcela());
         assertEquals(d("100.00"), f.itens().get(0).valor());
