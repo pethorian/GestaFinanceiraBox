@@ -3,7 +3,7 @@ import type {
   Beneficio, Bonus, Cargo, Categoria, Dados, GrupoGasto, SaudeFinanceira, Decimo, Ferias, Lancamento, Meta, MetaEntrada, MesProjecao, ParametrosVigentes,
   ParcelaPlr, Perfil, Plr, Projecao, ResumoGastos, TabelaFaixas, ChaveAdicional, DestinoEntrada, PlanoAdicional,
   PlrControle, PlrGasto, PlrGastoEntrada, PlrRecebimento, PlrRecebimentoEntrada,
-  GrupoLancamento, TipoLancamento, Cartao, CartaoEntrada, CompraCartao, CompraEntrada, Fatura,
+  GrupoLancamento, TipoLancamento, Cartao, PeriodoSaude, CartaoEntrada, CompraCartao, CompraEntrada, Fatura,
 } from '../domain/types'
 import { http } from './http'
 
@@ -27,8 +27,9 @@ export const api = {
     http.put<Categoria>(`/api/categorias/${encodeURIComponent(nome)}/grupo`, { grupo }),
 
   // saúde financeira (método 50/30/20)
-  saudeFinanceira: () => http.get<SaudeFinanceira>('/api/saude-financeira'),
-  salvarSaudeFinanceira: (participa: boolean) => http.put<SaudeFinanceira>('/api/saude-financeira', { participa }),
+  saudeFinanceira: (periodo: PeriodoSaude = 'MEDIA_12') => http.get<SaudeFinanceira>(`/api/saude-financeira?periodo=${periodo}`),
+  salvarSaudeFinanceira: (participa: boolean, periodo: PeriodoSaude = 'MEDIA_12') =>
+    http.put<SaudeFinanceira>(`/api/saude-financeira?periodo=${periodo}`, { participa }),
   /** grupo: FIXOS (todo mês + parcelado) ou EVENTUAIS (uma vez); sem grupo soma tudo */
   resumoGastos: (grupo?: GrupoLancamento) =>
     http.get<ResumoGastos>(grupo ? `/api/lancamentos/resumo?grupo=${grupo}` : '/api/lancamentos/resumo'),

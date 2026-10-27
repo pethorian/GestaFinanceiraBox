@@ -6,6 +6,7 @@ import { SaudeFinanceiraView } from './SaudeFinanceira'
 
 const base: SaudeFinanceira = {
   participa: false,
+  periodo: 'MEDIA_12',
   rendaMensal: 5000,
   recomendado: { necessidades: 2500, desejos: 1500, poupanca: 1000 },
   atual: { necessidades: 2800, desejos: 900, poupanca: 400 },
@@ -31,7 +32,23 @@ const base: SaudeFinanceira = {
 }
 
 const render = (s: SaudeFinanceira) =>
-  renderToStaticMarkup(<SaudeFinanceiraView saude={s} onAlternar={() => {}} onGrupo={() => {}} />)
+  renderToStaticMarkup(<SaudeFinanceiraView saude={s} onAlternar={() => {}} onGrupo={() => {}} onPeriodo={() => {}} />)
+
+describe('Saúde financeira: período', () => {
+  it('mostra o seletor com a média de 12 meses marcada por padrão', () => {
+    const html = render(base)
+    expect(html).toContain('Mês atual')
+    expect(html).toContain('Média de 12 meses')
+    expect(html).toMatch(/checked="" value="MEDIA_12"/)
+    expect(html).toContain('Média mensal dos próximos 12 meses.')
+  })
+  it('no mês atual, marca a opção e troca a nota das categorias', () => {
+    const html = render({ ...base, participa: true, periodo: 'MES_ATUAL' })
+    expect(html).toMatch(/checked="" value="MES_ATUAL"/)
+    expect(html).toContain('Gastos e aportes do mês atual.')
+    expect(html).not.toContain('Média mensal dos próximos 12 meses.')
+  })
+})
 
 describe('Saúde financeira: sem adesão', () => {
   const html = render(base)

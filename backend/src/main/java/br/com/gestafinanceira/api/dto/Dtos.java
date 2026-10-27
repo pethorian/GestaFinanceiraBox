@@ -5,6 +5,7 @@ import br.com.gestafinanceira.domain.calculo.adicionais.TotaisAdicionais;
 import br.com.gestafinanceira.domain.calculo.cartao.TipoCompra;
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
 import br.com.gestafinanceira.domain.calculo.saude.Faixas;
+import br.com.gestafinanceira.domain.calculo.saude.PeriodoSaude;
 import br.com.gestafinanceira.domain.calculo.saude.SaudeAdicionais;
 import br.com.gestafinanceira.domain.calculo.saude.StatusFaixa;
 import br.com.gestafinanceira.domain.modelo.EventoAdicional;
@@ -304,7 +305,7 @@ public final class Dtos {
     }
 
     public record SaudeFinanceiraDto(
-            boolean participa, BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
+            boolean participa, PeriodoSaude periodo, BigDecimal rendaMensal, Faixas<BigDecimal> recomendado, Faixas<BigDecimal> atual,
             Faixas<BigDecimal> percentuais, Faixas<BigDecimal> diferenca, Faixas<StatusFaixa> status,
             BigDecimal sobraLivre, BigDecimal aporteSugerido, List<CategoriaSaudeDto> categorias,
             List<String> diagnostico, PoupancaDetalhe poupancaDetalhe, SaudeAdicionais.Resultado adicionais) {

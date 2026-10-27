@@ -6,9 +6,9 @@ import br.com.gestafinanceira.api.dto.Dtos.PoupancaDetalhe;
 import br.com.gestafinanceira.api.dto.Dtos.SaudeFinanceiraDto;
 import br.com.gestafinanceira.domain.calculo.Dinheiro;
 import br.com.gestafinanceira.domain.calculo.projecao.MesProjecao;
-import br.com.gestafinanceira.domain.calculo.projecao.ProjetorMensal;
 import br.com.gestafinanceira.api.dto.Dtos.ProjecaoDto;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020;
+import br.com.gestafinanceira.domain.calculo.saude.PeriodoSaude;
 import br.com.gestafinanceira.domain.calculo.saude.SaudeAdicionais;
 import br.com.gestafinanceira.domain.calculo.saude.Metodo503020.Resultado;
 import br.com.gestafinanceira.domain.modelo.GrupoGasto;
@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Renda = líquido do "mês comum" do mês atual + contribuição FUNCEF do participante (que conta como poupança;
  * a contrapartida da patrocinadora não entra, pois não é renda do usuário); gastos = médias mensais do resumo de lançamentos somadas por
  * grupo da categoria; poupança = média mensal dos aportes em metas nos 12 meses da projeção + FUNCEF do mês comum.
+ * Com {@link PeriodoSaude#MES_ATUAL}, gastos e aportes são só os do mês atual (a renda é a mesma).
  */
 @Service
 @Transactional
@@ -51,6 +52,11 @@ public class SaudeFinanceiraService {
     }
 
     public SaudeFinanceiraDto buscar() {
+        return buscar(PeriodoSaude.MEDIA_12);
+    }
+
+    public SaudeFinanceiraDto buscar(PeriodoSaude periodo) {
+        PeriodoSaude per = periodo != null ? periodo : PeriodoSaude.MEDIA_12;
         Perfil p = perfil.entidade();
         // A contribuição FUNCEF sai do líquido e volta como poupança: a renda de referência a soma de volta.
         MesProjecao comum = projecao.mesComum(null);
@@ -58,7 +64,7 @@ public class SaudeFinanceiraService {
         BigDecimal renda = comum.liquido().add(funcef);
 
         Map<String, BigDecimal> medias = new HashMap<>();
-        for (CategoriaResumoDto c : lancamentos.resumoPorCategoria(null).categorias()) {
+        for (CategoriaResumoDto c : lancamentos.resumoPorCategoria(null, null, per.meses()).categorias()) {
             medias.merge(c.categoria(), c.mediaMensal(), BigDecimal::add);
         }
         List<Categoria> todas = categorias.findAllByOrderByOrdemAscNomeAsc();
@@ -79,8 +85,9 @@ public class SaudeFinanceiraService {
         }
 
         ProjecaoDto proj = projecao.projetar(null);
-        BigDecimal aportes = proj.resumo().aportes();
-        BigDecimal poupanca = Dinheiro.arredondar(aportes.divide(BigDecimal.valueOf(ProjetorMensal.MESES), 10,
+        BigDecimal aportes = proj.meses().stream().limit(per.meses()).map(MesProjecao::aportes)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal poupanca = Dinheiro.arredondar(aportes.divide(BigDecimal.valueOf(per.meses()), 10,
                 RoundingMode.HALF_UP));
 
         Resultado r = Metodo503020.calcular(renda, necessidades, desejos, poupanca, funcef);
@@ -89,16 +96,16 @@ public class SaudeFinanceiraService {
                 proj.meses().stream().flatMap(m -> m.adicionais().stream()).toList());
         List<String> diagnostico = new ArrayList<>(r.diagnostico());
         diagnostico.addAll(adicionais.diagnostico());
-        return new SaudeFinanceiraDto(p.metodo503020, r.rendaMensal(), r.recomendado(), r.atual(), r.percentuais(),
+        return new SaudeFinanceiraDto(p.metodo503020, per, r.rendaMensal(), r.recomendado(), r.atual(), r.percentuais(),
                 r.diferenca(), r.status(), r.sobraLivre(), r.aporteSugerido(), lista, diagnostico,
                 new PoupancaDetalhe(r.poupancaDetalhe().metas(), r.poupancaDetalhe().funcef()), adicionais);
     }
 
-    public SaudeFinanceiraDto definirParticipacao(boolean participa) {
+    public SaudeFinanceiraDto definirParticipacao(boolean participa, PeriodoSaude periodo) {
         Perfil p = perfil.entidade();
         p.metodo503020 = participa;
         p.atualizadoEm = LocalDateTime.now();
         perfis.save(p);
-        return buscar();
+        return buscar(periodo);
     }
 }

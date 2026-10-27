@@ -212,6 +212,40 @@ class SaudeFinanceiraIntegrationTest {
     }
 
     @Test
+    void periodoMesAtualUsaSoOsGastosEAportesDoMes() throws Exception {
+        limparGastos();
+        for (JsonNode m : ler(mvc.perform(get("/api/metas")))) {
+            mvc.perform(delete("/api/metas/" + m.get("id").asText())).andExpect(status().isNoContent());
+        }
+        semFuncef();
+        gasto("Moradia", 1000);
+        json(post("/api/lancamentos"), """
+                {"descricao":"Viagem","categoria":"Lazer","tipo":"PONTUAL","valor":1200,"mesInicial":"2026-10","parcelas":0}""")
+                .andExpect(status().isCreated());
+        // meta com alvo: aporta 500 em out e 300 em nov (atinge 800) => média 800/12
+        json(post("/api/metas"), "{\"nome\":\"Curta\",\"valorAlvo\":800,\"valorAtual\":0,\"aporteMensal\":500}")
+                .andExpect(status().isCreated());
+
+        JsonNode media = saude();
+        assertEquals("MEDIA_12", media.get("periodo").asText());
+        assertEquals(0, v(media.at("/atual/desejos")).compareTo(new BigDecimal("100.00")));
+        assertEquals(0, v(media.at("/atual/poupanca")).compareTo(new BigDecimal("66.67")));
+
+        JsonNode mes = ler(mvc.perform(get("/api/saude-financeira?periodo=MES_ATUAL")).andExpect(status().isOk()));
+        assertEquals("MES_ATUAL", mes.get("periodo").asText());
+        assertEquals(0, v(mes.at("/atual/necessidades")).compareTo(new BigDecimal("1000")));
+        assertEquals(0, v(mes.at("/atual/desejos")).compareTo(new BigDecimal("1200")));
+        assertEquals(0, v(mes.at("/atual/poupanca")).compareTo(new BigDecimal("500")));
+        assertEquals(0, v(mes.get("rendaMensal")).compareTo(v(media.get("rendaMensal"))));
+        mvc.perform(get("/api/saude-financeira?periodo=MES_ATUAL"))
+                .andExpect(jsonPath("$.categorias[?(@.nome=='Lazer')].mediaMensal", contains(1200.0)));
+
+        json(put("/api/saude-financeira?periodo=MES_ATUAL"), "{\"participa\":true}").andExpect(status().isOk())
+                .andExpect(jsonPath("$.periodo", is("MES_ATUAL")));
+        mvc.perform(get("/api/saude-financeira?periodo=ANO")).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void restaurarPadraoVoltaParticipaEGrupos() throws Exception {
         json(put("/api/saude-financeira"), "{\"participa\":true}").andExpect(status().isOk());
         json(put("/api/categorias/Moradia/grupo"), "{\"grupo\":\"DESEJO\"}").andExpect(status().isOk());

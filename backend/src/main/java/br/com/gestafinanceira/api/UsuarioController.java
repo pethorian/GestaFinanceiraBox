@@ -13,6 +13,7 @@ import br.com.gestafinanceira.api.dto.Dtos.PerfilDto;
 import br.com.gestafinanceira.api.dto.Dtos.PlrDto;
 import br.com.gestafinanceira.api.dto.Dtos.ResumoGastosDto;
 import br.com.gestafinanceira.application.DadosService;
+import br.com.gestafinanceira.domain.calculo.saude.PeriodoSaude;
 import br.com.gestafinanceira.domain.modelo.GrupoLancamento;
 import br.com.gestafinanceira.domain.modelo.TipoLancamento;
 import br.com.gestafinanceira.application.DecimoService;
@@ -181,13 +182,14 @@ public class UsuarioController {
 
     // saúde financeira (método 50/30/20)
     @GetMapping("/saude-financeira")
-    public SaudeFinanceiraDto saudeFinanceira() {
-        return saude.buscar();
+    public SaudeFinanceiraDto saudeFinanceira(@RequestParam(required = false) PeriodoSaude periodo) {
+        return saude.buscar(periodo);
     }
 
     @PutMapping("/saude-financeira")
-    public SaudeFinanceiraDto atualizarSaudeFinanceira(@Valid @RequestBody ParticipaDto d) {
-        return saude.definirParticipacao(d.participa());
+    public SaudeFinanceiraDto atualizarSaudeFinanceira(@Valid @RequestBody ParticipaDto d,
+                                                       @RequestParam(required = false) PeriodoSaude periodo) {
+        return saude.definirParticipacao(d.participa(), periodo);
     }
 
     // metas
