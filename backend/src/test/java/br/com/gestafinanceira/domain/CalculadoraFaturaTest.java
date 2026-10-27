@@ -35,33 +35,34 @@ class CalculadoraFaturaTest {
     }
 
     @Test
-    void compraAntesDoFechamentoVenceNoMesSeguinteAoFechamento() {
-        // fecha dia 10: compra em 9/3 fecha em 10/3 e vence em abril
-        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 9), 10, 20));
+    void compraAntesDoFechamentoVenceNoMesDoFechamento() {
+        // fecha dia 10, vence dia 20: compra em 9/3 fecha em 10/3 e vence em 20/3
+        assertEquals(YearMonth.of(2026, 3), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 9), 10, 20));
     }
 
     @Test
     void compraNoDiaDoFechamentoJaCaiNaProximaFatura() {
-        assertEquals(YearMonth.of(2026, 5), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 10), 10, 20));
+        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 10), 10, 20));
     }
 
     @Test
     void compraDepoisDoFechamentoCaiNaProximaFatura() {
-        assertEquals(YearMonth.of(2026, 5), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 25), 10, 20));
+        assertEquals(YearMonth.of(2026, 4), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 3, 25), 10, 20));
     }
 
     @Test
-    void fechaDia13VenceDia23DoMesSeguinte() {
-        // a fatura que fecha em 13/10 vence em 23/11; a que fecha em 13/11 vence em 23/12
-        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 12), 13, 23));
-        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 13), 13, 23));
-        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 12), 13, 23));
-        assertEquals(YearMonth.of(2027, 1), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 13), 13, 23));
+    void fechaDia13VenceDia23NoMesmoMes() {
+        // compras de 13/10 a 12/11 fecham em 13/11 e vencem em 23/11; a partir de 13/11, vencem em 23/12
+        assertEquals(YearMonth.of(2026, 10), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 12), 13, 23));
+        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 10, 13), 13, 23));
+        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 12), 13, 23));
+        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 11, 13), 13, 23));
     }
 
     @Test
     void faturaAbertaEhAQueRecebeAsComprasDeHoje() {
-        assertEquals(YearMonth.of(2026, 12), CalculadoraFatura.faturaAberta(LocalDate.of(2026, 10, 27), 13, 23));
+        // em 27/10 a fatura aberta fecha em 13/11 e vence em 23/11
+        assertEquals(YearMonth.of(2026, 11), CalculadoraFatura.faturaAberta(LocalDate.of(2026, 10, 27), 13, 23));
     }
 
     @Test
@@ -74,8 +75,8 @@ class CalculadoraFaturaTest {
 
     @Test
     void viradaDeAno() {
-        // fecha dia 10 vence dia 20: compra em 15/12 fecha em jan e vence em fev
-        assertEquals(YearMonth.of(2027, 2), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 15), 10, 20));
+        // fecha dia 10 vence dia 20: compra em 15/12 fecha em jan e vence em jan
+        assertEquals(YearMonth.of(2027, 1), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 15), 10, 20));
         // fecha dia 25 vence dia 5: compra em 26/12 fecha em jan e vence em fev
         assertEquals(YearMonth.of(2027, 2), CalculadoraFatura.primeiraFatura(LocalDate.of(2026, 12, 26), 25, 5));
         // fecha dia 25 vence dia 5: compra em 3/12 fecha em dez e vence em jan
@@ -167,12 +168,12 @@ class CalculadoraFaturaTest {
 
     @Test
     void faturaDeUmMesComItensRotulosETotal() {
-        // fecha dia 10, vence dia 20 (sempre no mês seguinte ao fechamento)
+        // fecha dia 10, vence dia 20 (no mês do fechamento)
         List<CompraCartaoCalculo> compras = List.of(
-                new CompraCartaoCalculo(1L, "Notebook", "Pessoal", TipoCompra.PARCELADA, LocalDate.of(2026, 1, 5), d("1000.00"), 10),
-                new CompraCartaoCalculo(2L, "Streaming", "Lazer", TipoCompra.ASSINATURA, LocalDate.of(2026, 2, 1), d("39.90"), 0),
-                new CompraCartaoCalculo(3L, "Jantar", "Alimentação", TipoCompra.A_VISTA, LocalDate.of(2026, 3, 9), d("80.10"), 0),
-                new CompraCartaoCalculo(4L, "Fora do mês", "Outros", TipoCompra.A_VISTA, LocalDate.of(2026, 3, 20), d("50.00"), 0));
+                new CompraCartaoCalculo(1L, "Notebook", "Pessoal", TipoCompra.PARCELADA, LocalDate.of(2026, 2, 5), d("1000.00"), 10),
+                new CompraCartaoCalculo(2L, "Streaming", "Lazer", TipoCompra.ASSINATURA, LocalDate.of(2026, 3, 1), d("39.90"), 0),
+                new CompraCartaoCalculo(3L, "Jantar", "Alimentação", TipoCompra.A_VISTA, LocalDate.of(2026, 4, 9), d("80.10"), 0),
+                new CompraCartaoCalculo(4L, "Fora do mês", "Outros", TipoCompra.A_VISTA, LocalDate.of(2026, 4, 20), d("50.00"), 0));
         Fatura f = CalculadoraFatura.fatura(compras, 10, 20, YearMonth.of(2026, 4));
         assertEquals(YearMonth.of(2026, 4), f.mes());
         // notebook: 1ª fatura em fev -> abril é a 3/10; streaming: 1ª fatura em mar -> recorrente; jantar: abril
